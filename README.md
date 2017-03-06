@@ -4,7 +4,7 @@ tl-dr (abstractive text summarization) take 2
 ## TODOs
 -   run textsum model
 -   write model https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/legacy_seq2seq/python/ops/seq2seq.py
--   write main function/training harness thing
+-   write main function/training harness thing  https://github.com/chiphuyen/tf-stanford-tutorials/tree/master/assignments/chatbot
 -   process data
 -   play with shit
 

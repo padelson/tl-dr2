@@ -1,7 +1,7 @@
 import os
 
 
-def procses_data(data_path):
+def process_data(data_path):
     pass
 
 

@@ -19,3 +19,7 @@ def make_dir(path):
 
 def get_batch():
     pass
+
+
+def process_input(input):
+    pass

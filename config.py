@@ -1,0 +1,9 @@
+BUCKETS = None
+NUM_SAMPLES = None
+DEC_VOCAB = None
+HIDDEN_SIZE = None
+NUM_LAYERS = None
+LR = None = None
+CKPT_PATH = None
+BATCH_SIZE = None
+NUM_EPOCHS = None

@@ -8,9 +8,8 @@ import data
 
 
 class Encoder(object):
-    def __init__(self, size, vocab_dim):
+    def __init__(self, size):
         self.size = size
-        self.vocab_dim = vocab_dim  # TODO do we need this?
 
     def encode(self, inputs, masks, encoder_state_input):
         """
@@ -28,7 +27,7 @@ class Encoder(object):
                  It can be context-level representation, word-level
                  representation, or both.
         """
-
+        # TODO
         return
 
 
@@ -49,7 +48,7 @@ class Decoder(object):
                                   implement the encoder
             :return:
             """
-
+            # TODO
             return
 
 
@@ -257,6 +256,22 @@ class Summarizer(object):
                                             bucket_index, False)
             print 'Test bucket:', bucket_index, 'Loss:', step_loss
 
-    def summarize(self, input):
-        # TODO
+    def construct_title(self, output_logits):
         pass
+
+    def summarize(self, input):
+        saver = tf.train.Saver()
+
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            self._check_restore_parameters(sess, saver)
+            bucket_index, input_data = data.process_input(input)
+            encoder_inputs = input_data[0]
+            decoder_inputs = input_data[1]
+            decoder_masks = input_data[2]
+            _, _, output_logits = self.run_step(sess, encoder_inputs,
+                                                decoder_inputs,
+                                                decoder_masks,
+                                                bucket_index, True)
+            title = self.construct_title(output_logits)
+            print(title)

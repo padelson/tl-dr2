@@ -54,7 +54,7 @@ class Decoder(object):
 
 class Summarizer(object):
     def _seq_f(self, encoder_inputs, decoder_inputs, do_decode):
-        return tf.contrib.legacy_seq2seq.embedding_attention_seq2seq(
+        return tf.nn.seq2seq.embedding_attention_seq2seq(
             encoder_inputs,
             decoder_inputs,
             self.cell,

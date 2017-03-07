@@ -53,13 +53,13 @@ class Decoder(object):
 
 
 class Summarizer(object):
-    def _seq_f(encoder_inputs, decoder_inputs, do_decode):
+    def _seq_f(self, encoder_inputs, decoder_inputs, do_decode):
         return tf.contrib.legacy_seq2seq.embedding_attention_seq2seq(
             encoder_inputs,
             decoder_inputs,
             self.cell,
-            num_encoder_symbols=config.ENC_VOCAB,
-            num_decoder_symbols=config.DEC_VOCAB,
+            num_encoder_symbols=self.enc_vocab,
+            num_decoder_symbols=self.dec_vocab,
             embedding_size=config.HIDDEN_SIZE,
             output_projection=self.output_projection,
             feed_previous=do_decode)
@@ -68,8 +68,13 @@ class Summarizer(object):
         data_dir = os.path.listdir(self.data_path)
         if 'DATA_PROCESSED' not in data_dir:
             data.process_data(self.data_path)
-        self.train_data, self.dev_data, self.test_data = data.split_data(
-                                                            self.data_path)
+        meta_data = data.split_data(self.data_path)
+        self.train_data = meta_data[0]
+        self.dev_data = meta_data[1]
+        self.test_data = meta_data[2]
+        self.enc_vocab = meta_data[3]
+        self.dec_vocab = meta_data[4]
+        self.num_samples = meta_data[5]
 
     def _setup_checkpoints(self):
         self.checkpoint_path = 'checkpoint_' + self.data_path
@@ -95,17 +100,17 @@ class Summarizer(object):
 
     def _create_loss(self):
         print 'Creating loss'
-        if config.NUM_SAMPLES > 0 and config.NUM_SAMPLES < config.DEC_VOCAB:
+        if self.num_samples > 0 and self.num_samples < self.dec_vocab:
             w = tf.get_variable('proj_w', [config.HIDDEN_SIZE,
-                                           config.DEC_VOCAB])
-            b = tf.get_variable('proj_b', [config.DEC_VOCAB])
+                                           self.dec_vocab])
+            b = tf.get_variable('proj_b', [self.dec_vocab])
             self.output_projection = (w, b)
 
         def sampled_loss(inputs, labels):
             labels = tf.reshape(labels, [-1, 1])
             return tf.nn.sampled_softmax_loss(tf.transpose(w), b, inputs,
-                                              labels, config.NUM_SAMPLES,
-                                              config.DEC_VOCAB)
+                                              labels, self.num_samples,
+                                              self.dec_vocab)
         self.softmax_loss = sampled_loss
 
         single_cell = tf.nn.rnn_cell.GRUCell(config.HIDDEN_SIZE)

@@ -54,8 +54,15 @@ class Decoder(object):
 
 class Summarizer(object):
     def _seq_f(encoder_inputs, decoder_inputs, do_decode):
-        # TODO
-        pass
+        return tf.contrib.legacy_seq2seq.embedding_attention_seq2seq(
+            encoder_inputs,
+            decoder_inputs,
+            self.cell,
+            num_encoder_symbols=config.ENC_VOCAB,
+            num_decoder_symbols=config.DEC_VOCAB,
+            embedding_size=config.HIDDEN_SIZE,
+            output_projection=self.output_projection,
+            feed_previous=do_decode)
 
     def _setup_data(self):
         data_dir = os.path.listdir(self.data_path)

@@ -256,8 +256,14 @@ class Summarizer(object):
                                             bucket_index, False)
             print 'Test bucket:', bucket_index, 'Loss:', step_loss
 
-    def construct_title(self, output_logits):
-        pass
+    def _construct_title(self, output_logits):
+        outputs = [int(np.argmax(logit, axis=1)) for logit in output_logits]
+        # If there is an EOS symbol in outputs, cut them at that point.
+        if config.EOS_ID in outputs:
+            outputs = outputs[:outputs.index(config.EOS_ID)]
+        # Print out sentence corresponding to outputs.
+        return " ".join([tf.compat.as_str(self.inv_dec_vocab[output])
+                         for output in outputs])
 
     def summarize(self, input):
         saver = tf.train.Saver()

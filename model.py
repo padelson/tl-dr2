@@ -5,6 +5,7 @@ import tensorflow as tf
 
 import config
 import data
+import utils
 
 
 class Encoder(object):
@@ -65,9 +66,11 @@ class Summarizer(object):
             feed_previous=do_decode)
 
     def _setup_data(self):
+        with open(os.path.join(self.sess_dir, 'data_path'), 'w') as f:
+            f.write(self.data_path)
         data_dir = os.path.listdir(self.data_path)
         if 'DATA_PROCESSED' not in data_dir:
-            data.process_data(self.data_path)
+            raise Exception('Data not processed')
         meta_data = data.split_data(self.data_path)
         self.train_data = meta_data[0]
         self.dev_data = meta_data[1]
@@ -76,8 +79,16 @@ class Summarizer(object):
         self.dec_vocab = meta_data[4]
         self.num_samples = meta_data[5]
 
+    def _setup_sess_dir(self):
+        self.sess_dir = self.sess_name
+        data.make_dir(self.sess_dir)
+
     def _setup_checkpoints(self):
-        self.checkpoint_path = 'checkpoint_' + self.data_path
+        self.checkpoint_path = os.path.join(self.sess_dir, 'checkpoint')
+        data.make_dir(self.checkpoint_path)
+
+    def _setup_results(self):
+        self.results_path = os.path.join(self.sess_dir, 'results')
         data.make_dir(self.checkpoint_path)
 
     def _create_placeholders(self):
@@ -159,14 +170,17 @@ class Summarizer(object):
                                           global_step=self.global_step))
                     print('Created opt for bucket {}'.format(bucket))
 
-    def __init__(self, encoder, decoder, data_path, update_params):
+    def __init__(self, encoder, decoder, data_path, update_params, sess_name):
         self.encoder = encoder
         self.decoder = decoder
         self.data_path = data_path
         self.update_params = update_params
+        self.sess_name = sess_name
 
+        self._setup_sess_dir()
         self._setup_data()
         self._setup_checkpoints()
+        self._setup_results()
         self._create_placeholders()
         self._create_loss()
         self._create_optimizer()
@@ -222,12 +236,16 @@ class Summarizer(object):
             self._check_restore_parameters(sess, saver)
             iteration = self.global_step.eval()
             total_loss = 0
-            for epoch in range(config.NUM_EPOCHS):
+            cur_epoch = iteration / self.num_samples
+            for epoch in range(cur_epoch, config.NUM_EPOCHS):
+                prog = utils.Progbar(target=self.num_samples /
+                                     config.BATCH_SIZE)
                 bucket_index = 0
                 while True:
                     skip_step = self._get_skip_step(iteration)
                     batch_data = data.get_batch(self.train_data, bucket_index,
-                                                config.BATCH_SIZE)
+                                                config.BATCH_SIZE,
+                                                iteration % self.num_samples)
                     encoder_inputs = batch_data[0]
                     decoder_inputs = batch_data[1]
                     decoder_masks = batch_data[2]
@@ -240,6 +258,7 @@ class Summarizer(object):
                                                     decoder_inputs,
                                                     decoder_masks,
                                                     bucket_index, True)
+                    prog.update(iteration + 1, [("train loss", step_loss)])
                     total_loss += step_loss
                     iteration += 1
                     if iteration % skip_step == 0:
@@ -248,9 +267,20 @@ class Summarizer(object):
                                    global_step=self.global_step)
                         if iteration % (10 * skip_step) == 0:
                             self.evaluate(sess)
-            self.evaluate(sess, test=True)
+                iteration = 0
 
-    def evaluate(self, sess, test=False):
+    def _construct_title(self, output_logits):
+        outputs = [int(np.argmax(logit, axis=1)) for logit in output_logits]
+        # If there is an EOS symbol in outputs, cut them at that point.
+        if config.EOS_ID in outputs:
+            outputs = outputs[:outputs.index(config.EOS_ID)]
+        # Print out sentence corresponding to outputs.
+        return " ".join([tf.compat.as_str(self.inv_dec_vocab[output])
+                         for output in outputs])
+
+    def evaluate(self, sess, iteration, test=False):
+        bucket_losses = []
+        summaries = []
         for bucket_index in xrange(len(config.BUCKETS)):
             if len(self.test_data[bucket_index]) == 0:
                 print 'Test: empty bucket', bucket_index
@@ -261,21 +291,20 @@ class Summarizer(object):
             encoder_inputs = batch_data[0]
             decoder_inputs = batch_data[1]
             decoder_masks = batch_data[2]
-            encoder_inputs, decoder_inputs, decoder_masks = data.get_batch()
-            _, step_loss, _ = self.run_step(sess, encoder_inputs,
-                                            decoder_inputs,
-                                            decoder_masks,
-                                            bucket_index, False)
-            print 'Test bucket:', bucket_index, 'Loss:', step_loss
-
-    def _construct_title(self, output_logits):
-        outputs = [int(np.argmax(logit, axis=1)) for logit in output_logits]
-        # If there is an EOS symbol in outputs, cut them at that point.
-        if config.EOS_ID in outputs:
-            outputs = outputs[:outputs.index(config.EOS_ID)]
-        # Print out sentence corresponding to outputs.
-        return " ".join([tf.compat.as_str(self.inv_dec_vocab[output])
-                         for output in outputs])
+            _, step_loss, output_logits = self.run_step(sess, encoder_inputs,
+                                                        decoder_inputs,
+                                                        decoder_masks,
+                                                        bucket_index, False)
+            loss_text = 'Test bucket:', bucket_index, 'Loss:', step_loss
+            print loss_text
+            bucket_losses.append(loss_text)
+            summaries.append(self._construct_title(decoder_inputs),
+                             self._construct_title(output_logits))
+            metrics_results = utils.eval_metrics(summaries)
+        path = os.path.join(self.results_path,
+                            'iter_' + str(iteration))
+        utils.write_results(summaries, metrics_results, bucket_losses, path)
+        print 'Wrote results to', path
 
     def summarize(self, input):
         saver = tf.train.Saver()

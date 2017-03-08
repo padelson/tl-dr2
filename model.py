@@ -77,6 +77,7 @@ class Summarizer(object):
         self.test_data = meta_data[2]
         self.enc_vocab = meta_data[3]
         self.dec_vocab = meta_data[4]
+        self.inv_dec_vocab = {v: k for k, v in self.dec_vocab.iteritems()}
         self.num_samples = meta_data[5]
 
     def _setup_sess_dir(self):

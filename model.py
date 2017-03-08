@@ -68,7 +68,8 @@ class Summarizer(object):
 
     def _construct_title(self, output_logits):
         if len(output_logits.shape) > 1:
-            outputs = [int(np.argmax(logit, axis=1)) for logit in output_logits]
+            outputs = [int(np.argmax(logit, axis=1))
+                       for logit in output_logits]
         else:
             outputs = [int(np.argmax(logit)) for logit in output_logits]
         # If there is an EOS symbol in outputs, cut them at that point.
@@ -108,7 +109,7 @@ class Summarizer(object):
         self.num_samples = meta_data[5]
         self.enc_vocab = len(self.enc_dict)
         self.dec_vocab = len(self.dec_dict)
-        self._save_dev_gt_headlines()
+        # self._save_dev_gt_headlines()
         print 'Setting up data took', time.time() - start, 'seconds'
 
     def _setup_sess_dir(self):
@@ -230,10 +231,10 @@ class Summarizer(object):
         ckpt = tf.train.get_checkpoint_state(os.path.dirname(
                                              self.checkpoint_path))
         if ckpt and ckpt.model_checkpoint_path:
-            print "Loading parameters for the Chatbot"
+            print "Loading parameters"
             saver.restore(sess, ckpt.model_checkpoint_path)
         else:
-            print "Initializing fresh parameters for the Chatbot"
+            print "Initializing fresh parameters"
 
     def _get_skip_step(self, iteration):
         # How many steps should the model train before it saves weights

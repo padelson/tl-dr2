@@ -95,6 +95,7 @@ def split_data(data_path, buckets):
     num_samples = len(headlines)
     train, dev, test = _bucketize_and_split_data(headlines, text, buckets,
                                                  enc_dict, dec_dict)
+    print test[0]['dec_input'][0]
     return train, dev, test, enc_dict, dec_dict, num_samples
 
 

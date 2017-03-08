@@ -56,7 +56,6 @@ class Decoder(object):
 
 class Summarizer(object):
     def _seq_f(self, encoder_inputs, decoder_inputs, do_decode):
-        print 'bitch'
         return tf.nn.seq2seq.embedding_attention_seq2seq(
             encoder_inputs,
             decoder_inputs,
@@ -155,7 +154,9 @@ class Summarizer(object):
                                            self.dec_vocab])
             b = tf.get_variable('proj_b', [self.dec_vocab])
             self.output_projection = (w, b)
+
         def sampled_loss(inputs, labels):
+
             labels = tf.reshape(labels, [-1, 1])
             return tf.nn.sampled_softmax_loss(tf.transpose(w), b, inputs,
                                               labels, self.num_samples,
@@ -189,7 +190,7 @@ class Summarizer(object):
 
     def _create_optimizer(self):
         print 'Creating optimizer...  ',
-        start = time.start()
+        start = time.time()
         with tf.variable_scope('training') as scope:
             self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False,
                                            name='global_step')

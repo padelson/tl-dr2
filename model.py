@@ -1,4 +1,5 @@
 import os
+import time
 
 import numpy as np
 import tensorflow as tf
@@ -66,54 +67,68 @@ class Summarizer(object):
             feed_previous=do_decode)
 
     def _construct_title(self, output_logits):
-        outputs = [int(np.argmax(logit, axis=1)) for logit in output_logits]
+        if len(output_logits.shape) > 1:
+            outputs = [int(np.argmax(logit, axis=1)) for logit in output_logits]
+        else:
+            outputs = [int(np.argmax(logit)) for logit in output_logits]
         # If there is an EOS symbol in outputs, cut them at that point.
         if config.EOS_ID in outputs:
             outputs = outputs[:outputs.index(config.EOS_ID)]
         # Print out sentence corresponding to outputs.
-        return " ".join([tf.compat.as_str(self.inv_dec_vocab[output])
+        return " ".join([tf.compat.as_str(self.inv_dec_dict[output])
                          for output in outputs])
 
     def _save_dev_gt_headlines(self):
+        print 'Saving headlines for dev set'
         dir_path = os.path.join(self.sess_dir, 'dev_headlines')
         self.gt_sums_path = dir_path
         data.make_dir(dir_path)
-        for i, hl_vec in enumerate(self.dev_data['dec_input']):
-            hl = self._construct_title(hl_vec)
-            filepath = os.path.join(dir_path, str(i) + '.txt')
-            with open(filepath, 'w') as f:
-                f.write(hl)
+        for bucket, d in self.dev_data.iteritems():
+            for i, hl_vec in enumerate(d['dec_input']):
+                hl = self._construct_title(hl_vec)
+                filepath = os.path.join(dir_path, str(i) + '.txt')
+                with open(filepath, 'w') as f:
+                    f.write(hl)
 
     def _setup_data(self):
+        print 'Setting up data...',
+        start = time.time()
         with open(os.path.join(self.sess_dir, 'data_path'), 'w') as f:
             f.write(self.data_path)
-        data_dir = os.path.listdir(self.data_path)
+        data_dir = os.listdir(self.data_path)
         if 'DATA_PROCESSED' not in data_dir:
             raise Exception('Data not processed')
-        meta_data = data.split_data(self.data_path)
+        meta_data = data.split_data(self.data_path, config.BUCKETS)
         self.train_data = meta_data[0]
         self.dev_data = meta_data[1]
         self.test_data = meta_data[2]
-        self.enc_vocab = meta_data[3]
-        self.dec_vocab = meta_data[4]
-        self.inv_dec_vocab = {v: k for k, v in self.dec_vocab.iteritems()}
+        self.enc_dict = meta_data[3]
+        self.dec_dict = meta_data[4]
+        self.inv_dec_dict = {v: k for k, v in self.dec_dict.iteritems()}
         self.num_samples = meta_data[5]
+        self.enc_vocab = len(self.enc_dict)
+        self.dec_vocab = len(self.dec_dict)
         self._save_dev_gt_headlines()
+        print 'Setting up data took', time.time() - start, 'seconds'
 
     def _setup_sess_dir(self):
+        print 'Setting up directory for session'
         self.sess_dir = self.sess_name
         data.make_dir(self.sess_dir)
 
     def _setup_checkpoints(self):
+        print 'Setting up checkpoints directory'
         self.checkpoint_path = os.path.join(self.sess_dir, 'checkpoint')
         data.make_dir(self.checkpoint_path)
 
     def _setup_results(self):
+        print 'Setting up results directory'
         self.results_path = os.path.join(self.sess_dir, 'results')
         data.make_dir(self.checkpoint_path)
 
     def _create_placeholders(self):
-        print 'Creating placeholders'
+        print 'Creating placeholders...  ',
+        start = time.time()
         self.encoder_inputs = []
         self.decoder_inputs = []
         self.decoder_masks = []
@@ -129,9 +144,11 @@ class Summarizer(object):
         # Our targets are decoder inputs shifted by one (to ignore <s> symbol)
         self.targets = [self.decoder_inputs[i + 1]
                         for i in xrange(len(self.decoder_inputs) - 1)]
+        print 'Took', time.time() - start, 'seconds'
 
     def _create_loss(self):
-        print 'Creating loss'
+        print 'Creating loss...  ',
+        start = time.time()
         if self.num_samples > 0 and self.num_samples < self.dec_vocab:
             w = tf.get_variable('proj_w', [config.HIDDEN_SIZE,
                                            self.dec_vocab])
@@ -169,9 +186,11 @@ class Summarizer(object):
                                         lambda x, y: self._seq_f(x, y, True),
                                         softmax_loss_function=self.softmax_loss
                                         )
+        print 'Took', time.time() - start, 'seconds'
 
     def _create_optimizer(self):
-        print 'Creating optimizer'
+        print 'Creating optimizer...  ',
+        start = time.start()
         with tf.variable_scope('training') as scope:
             self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False,
                                            name='global_step')
@@ -190,6 +209,7 @@ class Summarizer(object):
                                               trainables),
                                           global_step=self.global_step))
                     print('Created opt for bucket {}'.format(bucket))
+        print 'Took', time.time() - start, 'seconds'
 
     def __init__(self, encoder, decoder, data_path, update_params, sess_name):
         self.encoder = encoder
@@ -207,8 +227,8 @@ class Summarizer(object):
         self._create_optimizer()
 
     def _check_restore_parameters(self, sess, saver):
-        ckpt = tf.train.get_checkpoint_state(os.path.dirname(config.CKPT_PATH +
-                                                             '/checkpoint'))
+        ckpt = tf.train.get_checkpoint_state(os.path.dirname(
+                                             self.checkpoint_path))
         if ckpt and ckpt.model_checkpoint_path:
             print "Loading parameters for the Chatbot"
             saver.restore(sess, ckpt.model_checkpoint_path)

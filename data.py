@@ -1,6 +1,6 @@
 import os
 
-from numpy import np
+import numpy as np
 
 
 def _read_and_split_file(path):
@@ -28,15 +28,15 @@ def _vectorize(vec):
 
 def _one_hot_and_mask_data(hl, txt, mask_size, enc_dict, dec_dict):
     txt_size, hl_size = mask_size
-    hl_vec = _vectorize(_pad_vec([dec_dict.get(w, enc_dict['<unk'])
+    hl_vec = _vectorize(_pad_vec([dec_dict.get(w, enc_dict['<unk>'])
                                   for w in hl.split(' ')], hl_size))
-    txt_vec = _pad_vec([enc_dict.get(w, enc_dict['<unk'])
+    txt_vec = _pad_vec([enc_dict.get(w, enc_dict['<unk>'])
                         for w in txt.split(' ')], txt_size)
     txt_vec = _vectorize(reversed(txt_vec))
     mask = np.ones(hl_size)
     for i in range(len(hl_vec), hl_size):
         mask[i] = 0
-    return hl_vec, txt_vec, mask
+    return np.array(hl_vec), np.array(txt_vec), np.array(mask)
 
 
 def init_data_buckets(n):
@@ -54,11 +54,8 @@ def _bucketize_and_split_data(headlines, text, buckets, enc_dict, dec_dict):
         txt = text[i]
         size = (len(txt), len(hl))
         bucket_index = _get_bucket(size, buckets)
-        hl, txt, mask = _one_hot_and_mask_data(hl, txt, buckets[bucket_index],
-                                               enc_dict, dec_dict)
         data_by_bucket[bucket_index]['enc_input'].append(txt)
         data_by_bucket[bucket_index]['dec_input'].append(hl)
-        data_by_bucket[bucket_index]['dec_masks'].append(mask)
 
     for key in data_by_bucket:
         bucket = data_by_bucket[key]
@@ -66,34 +63,39 @@ def _bucketize_and_split_data(headlines, text, buckets, enc_dict, dec_dict):
         split_data_indices = np.random.permutation(np.arange(num_samples))
         for i in range(len(split_data_indices)):
             data_index = split_data_indices[i]
+            txt = bucket['enc_input'][data_index]
+            hl = bucket['dec_input'][data_index]
+            hl_vec, txt_vec, mask = _one_hot_and_mask_data(hl, txt,
+                                                           buckets[key],
+                                                           enc_dict, dec_dict)
             if i < num_samples * 9 / 10:
-                train[key]['enc_input'].append(bucket['enc_input'][data_index])
-                train[key]['dec_input'].append(bucket['dec_input'][data_index])
-                train[key]['dec_masks'].append(bucket['dec_masks'][data_index])
+                train[key]['enc_input'].append(txt_vec)
+                train[key]['dec_input'].append(hl_vec)
+                train[key]['dec_masks'].append(mask)
             elif i % 2 == 0:
-                dev[key]['enc_input'].append(bucket['enc_input'][data_index])
-                dev[key]['dec_input'].append(bucket['dec_input'][data_index])
-                dev[key]['dec_masks'].append(bucket['dec_masks'][data_index])
+                dev[key]['enc_input'].append(txt_vec)
+                dev[key]['dec_input'].append(hl_vec)
+                dev[key]['dec_masks'].append(mask)
             else:
-                test[key]['enc_input'].append(bucket['enc_input'][data_index])
-                test[key]['dec_input'].append(bucket['dec_input'][data_index])
-                test[key]['dec_masks'].append(bucket['dec_masks'][data_index])
+                test[key]['enc_input'].append(txt_vec)
+                test[key]['dec_input'].append(hl_vec)
+                test[key]['dec_masks'].append(mask)
 
     return train, dev, test
 
 
-def split_data(data_path, buckets, enc_dict, dec_dict):
+def split_data(data_path, buckets):
     # TODO comply with actual format
     headlines = _read_and_split_file(os.path.join(data_path, 'headlines.txt'))
     text = _read_and_split_file(os.path.join(data_path, 'text.txt'))
     enc_vocab = _read_and_split_file(os.path.join(data_path, 'enc_vocab.txt'))
     dec_vocab = _read_and_split_file(os.path.join(data_path, 'dec_vocab.txt'))
+    enc_dict = {enc_vocab[i]: i for i in range(len(enc_vocab))}
+    dec_dict = {dec_vocab[i]: i for i in range(len(dec_vocab))}
     num_samples = len(headlines)
     train, dev, test = _bucketize_and_split_data(headlines, text, buckets,
                                                  enc_dict, dec_dict)
-    enc_vocab_dict = {enc_vocab[i]: i for i in range(len(enc_vocab))}
-    dec_vocab_dict = {dec_vocab[i]: i for i in range(len(dec_vocab))}
-    return train, dev, test, enc_vocab_dict, dec_vocab_dict, num_samples
+    return train, dev, test, enc_dict, dec_dict, num_samples
 
 
 def make_dir(path):
@@ -107,7 +109,6 @@ def make_dir(path):
 def _reshape(inputs, size, batch_size):
     """ Create batch-major inputs. Batch inputs are just re-indexed inputs
     """
-    # TODO is this correct to do?
     batch_inputs = []
     for length_id in xrange(size):
         batch_inputs.append(np.array([inputs[batch_id][length_id]

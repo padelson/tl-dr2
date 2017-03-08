@@ -11,9 +11,6 @@ def make_dir(path):
     except OSError:
         pass
 
-parentpath = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/'
-
-
 def grabContents(f, tag, exclusive=True):
     if (f.readline() != "<%s>\n" % tag):
         return ""
@@ -72,9 +69,11 @@ def test():
         t.close()
 
 def ostest():
-    for entry in os.listdir(parentpath):
-        #if os.path.isfile(entry):
-        print entry
+    for i in range(3):
+        path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % i
+        for entry in os.walk(path):
+            #if os.path.isfile(entry):
+            print entry
 
 start_time = time.time()
 #test()

@@ -71,10 +71,9 @@ def test():
 def ostest():
     for i in range(3):
         path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
-        for _,_,filenames in os.walk(path):
-            #if os.path.isfile(entry):
+        for dirname,_,filenames in os.walk(path):
             for filename in filenames:
-                print filename
+                print dirname+'/'+filename
 
 start_time = time.time()
 #test()

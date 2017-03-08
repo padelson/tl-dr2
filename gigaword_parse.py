@@ -11,7 +11,7 @@ def make_dir(path):
     except OSError:
         pass
 
-def grabContents(f, tag, exclusive=True):
+def grabContents(f, tag):
     if (f.readline() != "<%s>\n" % tag):
         return ""
     contents = ""
@@ -68,12 +68,20 @@ def test():
         h.close()
         t.close()
 
+def process(dirname, filename):
+    f = open(dirname + '/' + filename, 'r')
+    h = open('/datadrive/gigaword_parsed/headlines/' + filename)
+    t = open('/datadrive/gigaword_parsed/text/' + filename)
+    h.close()
+    t.close()
+    f.close()
+
 def ostest():
     for i in range(3):
         path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
         for dirname,_,filenames in os.walk(path):
             for filename in filenames:
-                print dirname+'/'+filename
+                process(dirname, filename)
 
 start_time = time.time()
 #test()

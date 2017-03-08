@@ -302,7 +302,7 @@ class Summarizer(object):
                     total_loss += step_loss
                     iteration += 1
                     if iteration % skip_step == 0:
-                        print  # TODO print info
+                        print 'Iteration:', iteration
                         saver.save(sess, self.checkpoint_path,
                                    global_step=self.global_step)
                         if iteration % (10 * skip_step) == 0:

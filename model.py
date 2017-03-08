@@ -65,6 +65,25 @@ class Summarizer(object):
             output_projection=self.output_projection,
             feed_previous=do_decode)
 
+    def _construct_title(self, output_logits):
+        outputs = [int(np.argmax(logit, axis=1)) for logit in output_logits]
+        # If there is an EOS symbol in outputs, cut them at that point.
+        if config.EOS_ID in outputs:
+            outputs = outputs[:outputs.index(config.EOS_ID)]
+        # Print out sentence corresponding to outputs.
+        return " ".join([tf.compat.as_str(self.inv_dec_vocab[output])
+                         for output in outputs])
+
+    def _save_dev_gt_headlines(self):
+        dir_path = os.path.join(self.sess_dir, 'dev_headlines')
+        self.gt_sums_path = dir_path
+        data.make_dir(dir_path)
+        for i, hl_vec in enumerate(self.dev_data['dec_input']):
+            hl = self._construct_title(hl_vec)
+            filepath = os.path.join(dir_path, str(i) + '.txt')
+            with open(filepath, 'w') as f:
+                f.write(hl)
+
     def _setup_data(self):
         with open(os.path.join(self.sess_dir, 'data_path'), 'w') as f:
             f.write(self.data_path)
@@ -79,6 +98,7 @@ class Summarizer(object):
         self.dec_vocab = meta_data[4]
         self.inv_dec_vocab = {v: k for k, v in self.dec_vocab.iteritems()}
         self.num_samples = meta_data[5]
+        self._save_dev_gt_headlines()
 
     def _setup_sess_dir(self):
         self.sess_dir = self.sess_name
@@ -229,15 +249,6 @@ class Summarizer(object):
         else:
             return None, outputs[0], outputs[1:]  # No grad norm, loss, outputs
 
-    def _construct_title(self, output_logits):
-        outputs = [int(np.argmax(logit, axis=1)) for logit in output_logits]
-        # If there is an EOS symbol in outputs, cut them at that point.
-        if config.EOS_ID in outputs:
-            outputs = outputs[:outputs.index(config.EOS_ID)]
-        # Print out sentence corresponding to outputs.
-        return " ".join([tf.compat.as_str(self.inv_dec_vocab[output])
-                         for output in outputs])
-
     def evaluate(self, sess, iteration, test=False):
         bucket_losses = []
         summaries = []
@@ -247,7 +258,7 @@ class Summarizer(object):
                 continue
             eval_data = self.test_data if test else self.dev_data
             batch_data = data.get_batch(eval_data, bucket_index,
-                                        config.BATCH_SIZE)
+                                        config.BUCKETS, config.BATCH_SIZE)
             encoder_inputs = batch_data[0]
             decoder_inputs = batch_data[1]
             decoder_masks = batch_data[2]
@@ -260,12 +271,11 @@ class Summarizer(object):
             bucket_losses.append(loss_text)
             summaries.append(self._construct_title(decoder_inputs),
                              self._construct_title(output_logits))
-            metrics_results = utils.eval_metrics(summaries)
         path = os.path.join(self.results_path,
                             'iter_' + str(iteration))
         if test:
             path += '_test'
-        utils.write_results(summaries, metrics_results, bucket_losses, path)
+        utils.write_results(summaries, bucket_losses, path, self.gt_sums_path)
         print 'Wrote results to', path
 
     def train(self):
@@ -284,6 +294,7 @@ class Summarizer(object):
                 while True:
                     skip_step = self._get_skip_step(iteration)
                     batch_data = data.get_batch(self.train_data, bucket_index,
+                                                config.BUCKETS,
                                                 config.BATCH_SIZE,
                                                 iteration % self.num_samples)
                     encoder_inputs = batch_data[0]
@@ -309,13 +320,14 @@ class Summarizer(object):
                             self.evaluate(sess, iteration)
             self.evaluate(sess, iteration, test=True)
 
-    def summarize(self, input):
+    def summarize(self, inputs):
         saver = tf.train.Saver()
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             self._check_restore_parameters(sess, saver)
-            bucket_index, input_data = data.process_input(input)
+            bucket_index, input_data = data.process_input(inputs,
+                                                          config.BUCKETS)
             encoder_inputs = input_data[0]
             decoder_inputs = input_data[1]
             decoder_masks = input_data[2]

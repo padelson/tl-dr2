@@ -1,13 +1,33 @@
+import os
 import sys
 import time
 import numpy as np
 
+from pyrouge import Rouge155
 
-def eval_metrics(summaries):
-    pass
+import data
 
 
-def write_results(summaries, metrics_results, losses, filepath):
+def _eval_metrics(gen_sums_path, gt_sums_path):
+    r = Rouge155()
+    r.system_dir = gen_sums_path
+    r.model_dir = gt_sums_path
+    r.system_filename_pattern = '(\d+).txt'
+    r.model_filename_pattern = '#ID#.txt'
+
+    output = r.convert_and_evaluate()
+    print(output)
+    output_dict = r.output_to_dict(output)
+    return output_dict
+
+
+def write_results(summaries, losses, filepath, gt_summaries_path):
+    dir_path = os.path.join(filepath, 'generated_summaries')
+    data.make_dir(dir_path)
+    for i, sums in enumerate(summaries):
+        with open(os.path.join(dir_path, str(i)+'.txt')) as f:
+            f.write(sums[1])
+    metrics_results = _eval_metrics(dir_path, gt_summaries_path)
     with open(filepath, 'w') as f:
         for loss in losses:
             f.write(loss + '\n')

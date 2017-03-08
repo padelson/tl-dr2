@@ -17,10 +17,22 @@ def _get_bucket(size, buckets):
     raise Exception('No bucket found for size: ' + str(size))
 
 
+def _pad_vec(vec, size):
+    return vec + [0] * (size - len(vec))
+
+
+def _vectorize(vec):
+    # TODO turn indices into one-hot vectors???
+    return vec
+
+
 def _one_hot_and_mask_data(hl, txt, mask_size, enc_dict, dec_dict):
-    hl_vec = [dec_dict.get(w, enc_dict['<unk']) for w in hl.split(' ')]
-    txt_vec = [enc_dict.get(w, enc_dict['<unk']) for w in txt.split(' ')]
     txt_size, hl_size = mask_size
+    hl_vec = _vectorize(_pad_vec([dec_dict.get(w, enc_dict['<unk'])
+                                  for w in hl.split(' ')], hl_size))
+    txt_vec = _pad_vec([enc_dict.get(w, enc_dict['<unk'])
+                        for w in txt.split(' ')], txt_size)
+    txt_vec = _vectorize(reversed(txt_vec))
     mask = np.ones(hl_size)
     for i in range(len(hl_vec), hl_size):
         mask[i] = 0
@@ -71,6 +83,7 @@ def _bucketize_and_split_data(headlines, text, buckets, enc_dict, dec_dict):
 
 
 def split_data(data_path, buckets, enc_dict, dec_dict):
+    # TODO comply with actual format
     headlines = _read_and_split_file(os.path.join(data_path, 'headlines.txt'))
     text = _read_and_split_file(os.path.join(data_path, 'text.txt'))
     enc_vocab = _read_and_split_file(os.path.join(data_path, 'enc_vocab.txt'))
@@ -91,9 +104,46 @@ def make_dir(path):
         pass
 
 
-def get_batch():
-    pass
+def _reshape(inputs, size, batch_size):
+    """ Create batch-major inputs. Batch inputs are just re-indexed inputs
+    """
+    # TODO is this correct to do?
+    batch_inputs = []
+    for length_id in xrange(size):
+        batch_inputs.append(np.array([inputs[batch_id][length_id]
+                                      for batch_id in xrange(batch_size)],
+                                     dtype=np.int32))
+    return batch_inputs
 
 
-def process_input(input):
-    pass
+def get_batch(data_buckets, bucket_index, buckets, batch_size, iteration=0):
+    bucket = data_buckets[bucket_index]
+    next_bucket = False
+    start_i = iteration * batch_size
+    end_i = (iteration + 1) * batch_size
+    if end_i > len(bucket['enc_input']):
+        next_bucket = True
+        start_i = -batch_size
+        end_i = None
+        enc_input = bucket['enc_input'][start_i:]
+        dec_input = bucket['dec_input'][start_i:]
+        dec_masks = bucket['dec_masks'][start_i:]
+    else:
+        enc_input = bucket['enc_input'][start_i:end_i]
+        dec_input = bucket['dec_input'][start_i:end_i]
+        dec_masks = bucket['dec_masks'][start_i:end_i]
+    enc_size, dec_size = buckets[bucket_index]
+    enc_matrix = _reshape(enc_input, enc_size, batch_size)
+    dec_matrix = _reshape(dec_input, dec_size, batch_size)
+    mask_matrix = _reshape(dec_masks)
+    return enc_matrix, dec_matrix, mask_matrix, next_bucket
+
+
+def process_input(inputs, buckets, enc_dict, dec_dict):
+    txt_size = len(inputs)
+    bucket_index = _get_bucket((txt_size, 0), buckets)
+    bucket = buckets[bucket_index]
+    hl_vec, txt_vec, mask = _one_hot_and_mask_data('', inputs, bucket,
+                                                   enc_dict, dec_dict)
+    input_data = ([txt_vec], [hl_vec], [mask])
+    return bucket_index, input_data

@@ -154,7 +154,7 @@ class Summarizer(object):
                                            self.dec_vocab])
             b = tf.get_variable('proj_b', [self.dec_vocab])
             self.output_projection = (w, b)
-
+        print 1, time.time() - start
         def sampled_loss(inputs, labels):
             labels = tf.reshape(labels, [-1, 1])
             return tf.nn.sampled_softmax_loss(tf.transpose(w), b, inputs,
@@ -165,7 +165,7 @@ class Summarizer(object):
         single_cell = tf.nn.rnn_cell.GRUCell(config.HIDDEN_SIZE)
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
-
+        print 2, time.time() - start
         if self.update_params:
             self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
                                         self.encoder_inputs,

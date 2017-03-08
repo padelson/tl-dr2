@@ -56,6 +56,7 @@ class Decoder(object):
 
 class Summarizer(object):
     def _seq_f(self, encoder_inputs, decoder_inputs, do_decode):
+        print 'bitch'
         return tf.nn.seq2seq.embedding_attention_seq2seq(
             encoder_inputs,
             decoder_inputs,
@@ -154,7 +155,6 @@ class Summarizer(object):
                                            self.dec_vocab])
             b = tf.get_variable('proj_b', [self.dec_vocab])
             self.output_projection = (w, b)
-        print 1, time.time() - start
         def sampled_loss(inputs, labels):
             labels = tf.reshape(labels, [-1, 1])
             return tf.nn.sampled_softmax_loss(tf.transpose(w), b, inputs,
@@ -165,7 +165,6 @@ class Summarizer(object):
         single_cell = tf.nn.rnn_cell.GRUCell(config.HIDDEN_SIZE)
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
-        print 2, time.time() - start
         if self.update_params:
             self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
                                         self.encoder_inputs,

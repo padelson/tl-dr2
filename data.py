@@ -109,7 +109,6 @@ def make_dir(path):
 def _reshape(inputs, size, batch_size):
     """ Create batch-major inputs. Batch inputs are just re-indexed inputs
     """
-    print inputs
     batch_inputs = []
     for length_id in xrange(size):
         batch_inputs.append(np.array([inputs[batch_id][length_id]
@@ -137,8 +136,8 @@ def get_batch(data_buckets, bucket_index, buckets, batch_size, iteration=0):
     enc_size, dec_size = buckets[bucket_index]
     enc_matrix = _reshape(enc_input, enc_size, batch_size)
     dec_matrix = _reshape(dec_input, dec_size, batch_size)
-    # mask_matrix = _reshape(dec_masks)
-    return enc_matrix, dec_matrix, dec_masks, next_bucket
+    mask_matrix = _reshape(dec_masks, dec_size, batch_size)
+    return enc_matrix, dec_matrix, mask_matrix, next_bucket
 
 
 def process_input(inputs, buckets, enc_dict, dec_dict):

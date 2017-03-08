@@ -238,6 +238,8 @@ class Summarizer(object):
 
     def _get_skip_step(self, iteration):
         # How many steps should the model train before it saves weights
+        if iteration <= 1:
+            return 1  # TODO change this back
         if iteration < self.num_samples:
             return self.num_samples / 10
         return self.num_samples / 2

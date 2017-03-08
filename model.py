@@ -185,7 +185,7 @@ class Summarizer(object):
         self._create_loss()
         self._create_optimizer()
 
-    def _check_restore_parameters(sess, saver):
+    def _check_restore_parameters(self, sess, saver):
         ckpt = tf.train.get_checkpoint_state(os.path.dirname(config.CKPT_PATH +
                                                              '/checkpoint'))
         if ckpt and ckpt.model_checkpoint_path:
@@ -194,11 +194,11 @@ class Summarizer(object):
         else:
             print "Initializing fresh parameters for the Chatbot"
 
-    def _get_skip_step(iteration):
+    def _get_skip_step(self, iteration):
         # How many steps should the model train before it saves weights
-        if iteration < 100:
-            return 30
-        return 100
+        if iteration < self.num_samples:
+            return self.num_samples / 10
+        return self.num_samples / 2
 
     def run_step(self, sess, encoder_inputs, decoder_inputs, decoder_masks,
                  bucket_id, update_params):
@@ -227,6 +227,45 @@ class Summarizer(object):
             return outputs[1], outputs[2], None  # Grad norm, loss, no outputs.
         else:
             return None, outputs[0], outputs[1:]  # No grad norm, loss, outputs
+
+    def _construct_title(self, output_logits):
+        outputs = [int(np.argmax(logit, axis=1)) for logit in output_logits]
+        # If there is an EOS symbol in outputs, cut them at that point.
+        if config.EOS_ID in outputs:
+            outputs = outputs[:outputs.index(config.EOS_ID)]
+        # Print out sentence corresponding to outputs.
+        return " ".join([tf.compat.as_str(self.inv_dec_vocab[output])
+                         for output in outputs])
+
+    def evaluate(self, sess, iteration, test=False):
+        bucket_losses = []
+        summaries = []
+        for bucket_index in xrange(len(config.BUCKETS)):
+            if len(self.test_data[bucket_index]) == 0:
+                print 'Test: empty bucket', bucket_index
+                continue
+            eval_data = self.test_data if test else self.dev_data
+            batch_data = data.get_batch(eval_data, bucket_index,
+                                        config.BATCH_SIZE)
+            encoder_inputs = batch_data[0]
+            decoder_inputs = batch_data[1]
+            decoder_masks = batch_data[2]
+            _, step_loss, output_logits = self.run_step(sess, encoder_inputs,
+                                                        decoder_inputs,
+                                                        decoder_masks,
+                                                        bucket_index, False)
+            loss_text = 'Test bucket:', bucket_index, 'Loss:', step_loss
+            print loss_text
+            bucket_losses.append(loss_text)
+            summaries.append(self._construct_title(decoder_inputs),
+                             self._construct_title(output_logits))
+            metrics_results = utils.eval_metrics(summaries)
+        path = os.path.join(self.results_path,
+                            'iter_' + str(iteration))
+        if test:
+            path += '_test'
+        utils.write_results(summaries, metrics_results, bucket_losses, path)
+        print 'Wrote results to', path
 
     def train(self):
         assert self.update_params
@@ -266,45 +305,8 @@ class Summarizer(object):
                         saver.save(sess, self.checkpoint_path,
                                    global_step=self.global_step)
                         if iteration % (10 * skip_step) == 0:
-                            self.evaluate(sess)
-                iteration = 0
-
-    def _construct_title(self, output_logits):
-        outputs = [int(np.argmax(logit, axis=1)) for logit in output_logits]
-        # If there is an EOS symbol in outputs, cut them at that point.
-        if config.EOS_ID in outputs:
-            outputs = outputs[:outputs.index(config.EOS_ID)]
-        # Print out sentence corresponding to outputs.
-        return " ".join([tf.compat.as_str(self.inv_dec_vocab[output])
-                         for output in outputs])
-
-    def evaluate(self, sess, iteration, test=False):
-        bucket_losses = []
-        summaries = []
-        for bucket_index in xrange(len(config.BUCKETS)):
-            if len(self.test_data[bucket_index]) == 0:
-                print 'Test: empty bucket', bucket_index
-                continue
-            eval_data = self.test_data if test else self.dev_data
-            batch_data = data.get_batch(eval_data, bucket_index,
-                                        config.BATCH_SIZE)
-            encoder_inputs = batch_data[0]
-            decoder_inputs = batch_data[1]
-            decoder_masks = batch_data[2]
-            _, step_loss, output_logits = self.run_step(sess, encoder_inputs,
-                                                        decoder_inputs,
-                                                        decoder_masks,
-                                                        bucket_index, False)
-            loss_text = 'Test bucket:', bucket_index, 'Loss:', step_loss
-            print loss_text
-            bucket_losses.append(loss_text)
-            summaries.append(self._construct_title(decoder_inputs),
-                             self._construct_title(output_logits))
-            metrics_results = utils.eval_metrics(summaries)
-        path = os.path.join(self.results_path,
-                            'iter_' + str(iteration))
-        utils.write_results(summaries, metrics_results, bucket_losses, path)
-        print 'Wrote results to', path
+                            self.evaluate(sess, iteration)
+            self.evaluate(sess, iteration, test=True)
 
     def summarize(self, input):
         saver = tf.train.Saver()

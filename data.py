@@ -8,7 +8,6 @@ def process_data(data_path):
 def split_data(data_path):
     pass
 
-
 def make_dir(path):
     """ Create a directory if there isn't one already. """
     try:

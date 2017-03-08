@@ -70,7 +70,7 @@ def test():
 
 def ostest():
     for i in range(3):
-        path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % i
+        path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
         for entry in os.walk(path):
             #if os.path.isfile(entry):
             print entry

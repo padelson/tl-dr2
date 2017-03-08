@@ -3,6 +3,7 @@
 import os
 import re
 import time
+from string import punctuation
 
 def make_dir(path):
     """ Create a directory if there isn't one already. """
@@ -11,67 +12,65 @@ def make_dir(path):
     except OSError:
         pass
 
-def grabContents(f, tag):
-    if (f.readline() != "<%s>\n" % tag):
-        return ""
-    contents = ""
+def readline(f):
     line = f.readline()
+    if line == "</DOC>\n":
+        raise Exception("end of document")
+    return line
+
+def grabContents(f, tag):
+    line = readline(f)
+    # check for correct tag (return None if incorrect)
+    if (line != "<%s>\n" % tag):
+        return None
+    contents = ""
+    line = readline(f)
     while line != "</%s>\n" % tag:
-        assert line[0] != '<' and line[-2] != '>'
         contents += line.replace('\n', ' ')
-        line = f.readline()
+        line = readline(f)
     return contents
 
 # assuming you have an open readable file...
 # read the <TEXT> until </TEXT>
 # throw Exception if the read is bad
-def getFirstTwoSentences(f, line):
-    while line != "<TEXT>\n":
-        assert line != "</DOC>\n"
-        line = f.readline()
-    first = grabContents(f, 'P')
-    second = grabContents(f, 'P')
-    if second:
-        contents = first + ' ' + second + '\n'
-        line = f.readline()
-        while line != "</TEXT>\n":
-            assert line != "</DOC>\n"
-            line = f.readline()
-    else:
-        contents = first
-    return contents
+def getFirstTwoSentences(f):
+    text = grabContents(f, "P")
+    while text is None:
+        text = grabContents(f, "P")
+    second = grabContents(f, "P")
+    if second is not None:
+        text += ' ' + second
+    return text
 
-def test():
-    with open('example_data','r') as f:
-        h = open('headlines.txt', 'w')
-        t = open('text.txt', 'w')
-
-        flag = False
-        debug = 1
-        while True:
-            print debug
-            line = f.readline()
-            if not line:
-                break
-
-            # if a headline has been found, get corresponding text
-            if flag:
-                t.write(getFirstTwoSentences(f, line))
-                flag = False
-            else:
-                headline = grabContents(f, "HEADLINE")
-                if headline:
-                    h.write(headline + '\n')
-                    flag = True
-            debug += 1
-
-        h.close()
-        t.close()
-
-def process(dirname, filename):
+def test(dirname=".", filename="example_data"):
     f = open(dirname + '/' + filename, 'r')
-    h = open('/datadrive/gigaword_parsed/headlines/' + filename)
-    t = open('/datadrive/gigaword_parsed/text/' + filename)
+    h = open('/datadrive/gigaword_parsed/headlines/' + filename, 'w')
+    t = open('/datadrive/gigaword_parsed/texts/' + filename, 'w')
+    #h = open('headlines.txt', 'w')
+    #t = open('text.txt', 'w')
+
+    count = 0
+    while True:
+        line = f.readline()
+        if not line:
+            break
+
+        # get to the beginning of document
+        if line.find('<DOC', 0, 4) == 0:
+            docline = line
+            try:
+                # get the headline (if no headline is found, Exception is thrown)
+                headline = grabContents(f, "HEADLINE")
+                while headline is None:
+                    headline = grabContents(f, "HEADLINE")
+                text = getFirstTwoSentences(f)
+                h.write(headline+'\n')
+                t.write(text+'\n')
+            except Exception:
+                #print docline
+                count += 1
+
+    print count
     h.close()
     t.close()
     f.close()

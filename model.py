@@ -336,7 +336,7 @@ class Summarizer(object):
                     iteration += 1
                     if iteration % skip_step == 0:
                         print 'Iteration:', iteration
-                        saver.save(sess, 'summarizer',
+                        saver.save(sess, self.checkpoint_path,
                                    global_step=self.global_step)
                         if iteration % (10 * skip_step) == 0:
                             self.evaluate(sess, iteration)

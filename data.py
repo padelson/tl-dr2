@@ -70,7 +70,7 @@ def _bucketize_and_split_data(headlines, text, buckets, enc_dict, dec_dict):
             hl_vec, txt_vec, mask = _one_hot_and_mask_data(hl, txt,
                                                            buckets[key],
                                                            enc_dict, dec_dict)
-            if i < num_samples * 9 / 10:
+            if i < num_samples * 8 / 10:
                 train[key]['enc_input'].append(txt_vec)
                 train[key]['dec_input'].append(hl_vec)
                 train[key]['dec_masks'].append(mask)

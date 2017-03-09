@@ -54,7 +54,7 @@ def _bucketize_and_split_data(headlines, text, buckets, enc_dict, dec_dict):
     for i in range(len(headlines)):
         hl = headlines[i]
         txt = text[i]
-        size = (len(txt), len(hl))
+        size = (len(txt.split()), len(hl.split()))
         bucket_index = _get_bucket(size, buckets)
         data_by_bucket[bucket_index]['enc_input'].append(txt)
         data_by_bucket[bucket_index]['dec_input'].append(hl)

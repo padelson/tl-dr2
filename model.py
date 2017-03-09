@@ -86,7 +86,7 @@ class Summarizer(object):
         elif set_name == 'test':
             self.test_headlines_path = dir_path
         data.make_dir(dir_path)
-        for headline in headlines:
+        for i, headline in enumerate(headlines):
             filepath = os.path.join(dir_path, str(i) + '.txt')
             with open(filepath, 'w') as f:
                 f.write(hl)

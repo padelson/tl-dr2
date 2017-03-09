@@ -125,7 +125,7 @@ class Summarizer(object):
     def _setup_results(self):
         print 'Setting up results directory'
         self.results_path = os.path.join(self.sess_dir, 'results')
-        data.make_dir(self.checkpoint_path)
+        data.make_dir(self.results_path)
 
     def _create_placeholders(self):
         print 'Creating placeholders...  ',
@@ -228,8 +228,7 @@ class Summarizer(object):
         self._create_optimizer()
 
     def _check_restore_parameters(self, sess, saver):
-        ckpt = tf.train.get_checkpoint_state(os.path.dirname(
-                                             self.checkpoint_path))
+        ckpt = tf.train.get_checkpoint_state(self.checkpoint_path)
         if ckpt and ckpt.model_checkpoint_path:
             print "Loading parameters"
             saver.restore(sess, ckpt.model_checkpoint_path)

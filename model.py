@@ -79,17 +79,17 @@ class Summarizer(object):
         return " ".join([tf.compat.as_str(self.inv_dec_dict[output])
                          for output in outputs])
 
-    def _save_dev_gt_headlines(self):
-        print 'Saving headlines for dev set'
-        dir_path = os.path.join(self.sess_dir, 'dev_headlines')
-        self.gt_sums_path = dir_path
+    def _save_gt_headlines(self, set_name, headlines):
+        dir_path = os.path.join(self.sess_dir, set_name + '_headlines')
+        if set_name == 'dev':
+            self.dev_headlines_path = dir_path
+        elif set_name == 'test':
+            self.test_headlines_path = dir_path
         data.make_dir(dir_path)
-        for bucket, d in self.dev_data.iteritems():
-            for i, hl_vec in enumerate(d['dec_input']):
-                hl = self._construct_title(hl_vec)
-                filepath = os.path.join(dir_path, str(i) + '.txt')
-                with open(filepath, 'w') as f:
-                    f.write(hl)
+        for headline in headlines:
+            filepath = os.path.join(dir_path, str(i) + '.txt')
+            with open(filepath, 'w') as f:
+                f.write(hl)
 
     def _setup_data(self):
         print 'Setting up data...',
@@ -105,8 +105,12 @@ class Summarizer(object):
         self.test_data = meta_data[2]
         self.enc_dict = meta_data[3]
         self.dec_dict = meta_data[4]
+        self.num_data_points = meta_data[5]
+        self.dev_headlines = meta_data[6]
+        self.test_headlines = meta_data[7]
+        self._save_gt_headlines('dev', self.dev_headlines)
+        self._save_gt_headlines('test', self.test_headlines)
         self.inv_dec_dict = {v: k for k, v in self.dec_dict.iteritems()}
-        self.num_samples = meta_data[5]
         self.enc_vocab = len(self.enc_dict)
         self.dec_vocab = len(self.dec_dict)
         # self._save_dev_gt_headlines()
@@ -150,7 +154,7 @@ class Summarizer(object):
     def _create_loss(self):
         print 'Creating loss...  ',
         start = time.time()
-        if self.num_samples > 0 and self.num_samples < self.dec_vocab:
+        if config.NUM_SAMPLES > 0 and config.NUM_SAMPLES < self.dec_vocab:
             w = tf.get_variable('proj_w', [config.HIDDEN_SIZE,
                                            self.dec_vocab])
             b = tf.get_variable('proj_b', [self.dec_vocab])
@@ -160,7 +164,7 @@ class Summarizer(object):
 
             labels = tf.reshape(labels, [-1, 1])
             return tf.nn.sampled_softmax_loss(tf.transpose(w), b, inputs,
-                                              labels, self.num_samples,
+                                              labels, config.NUM_SAMPLES,
                                               self.dec_vocab)
         self.softmax_loss = sampled_loss
 
@@ -239,9 +243,9 @@ class Summarizer(object):
         # How many steps should the model train before it saves weights
         if iteration <= 1:
             return 1  # TODO change this back
-        if iteration < self.num_samples:
-            return self.num_samples / 10
-        return self.num_samples / 2
+        if iteration < self.num_data_points:
+            return self.num_data_points / 10
+        return self.num_data_points / 2
 
     def run_step(self, sess, encoder_inputs, decoder_inputs, decoder_masks,
                  bucket_id, update_params):
@@ -297,7 +301,8 @@ class Summarizer(object):
                             'iter_' + str(iteration))
         if test:
             path += '_test'
-        utils.write_results(summaries, bucket_losses, path, self.gt_sums_path)
+        gt_path = self.test_headlines_path if test else self.dev_headlines_path
+        utils.write_results(summaries, bucket_losses, path, gt_path)
         print 'Wrote results to', path
 
     def train(self):
@@ -308,9 +313,9 @@ class Summarizer(object):
             self._check_restore_parameters(sess, saver)
             iteration = self.global_step.eval()
             total_loss = 0
-            cur_epoch = iteration / self.num_samples
+            cur_epoch = iteration / self.num_data_points
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
-                prog = utils.Progbar(target=self.num_samples /
+                prog = utils.Progbar(target=self.num_data_points /
                                      config.BATCH_SIZE)
                 bucket_index = 0
                 while True:
@@ -318,7 +323,8 @@ class Summarizer(object):
                     batch_data = data.get_batch(self.train_data, bucket_index,
                                                 config.BUCKETS,
                                                 config.BATCH_SIZE,
-                                                iteration % self.num_samples)
+                                                iteration %
+                                                self.num_data_points)
                     encoder_inputs = batch_data[0]
                     decoder_inputs = batch_data[1]
                     decoder_masks = batch_data[2]

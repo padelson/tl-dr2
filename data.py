@@ -49,6 +49,8 @@ def _bucketize_and_split_data(headlines, text, buckets, enc_dict, dec_dict):
     dev = init_data_buckets(len(buckets))
     test = init_data_buckets(len(buckets))
     data_by_bucket = init_data_buckets(len(buckets))
+    dev_headlines = []
+    test_headlines = []
     for i in range(len(headlines)):
         hl = headlines[i]
         txt = text[i]
@@ -76,12 +78,14 @@ def _bucketize_and_split_data(headlines, text, buckets, enc_dict, dec_dict):
                 dev[key]['enc_input'].append(txt_vec)
                 dev[key]['dec_input'].append(hl_vec)
                 dev[key]['dec_masks'].append(mask)
+                dev_headlines.append(hl)
             else:
                 test[key]['enc_input'].append(txt_vec)
                 test[key]['dec_input'].append(hl_vec)
                 test[key]['dec_masks'].append(mask)
+                test_headlines.append(hl)
 
-    return train, dev, test
+    return train, dev, test, dev_headlines, test_headlines
 
 
 def split_data(data_path, buckets):
@@ -93,9 +97,11 @@ def split_data(data_path, buckets):
     enc_dict = {enc_vocab[i]: i for i in range(len(enc_vocab))}
     dec_dict = {dec_vocab[i]: i for i in range(len(dec_vocab))}
     num_samples = len(headlines)
-    train, dev, test = _bucketize_and_split_data(headlines, text, buckets,
-                                                 enc_dict, dec_dict)
-    return train, dev, test, enc_dict, dec_dict, num_samples
+    train, dev, test, dev_headlines, test_headlines = \
+        _bucketize_and_split_data(headlines, text, buckets,
+                                  enc_dict, dec_dict)
+    return train, dev, test, enc_dict, dec_dict, num_samples, \
+        dev_headlines, test_headlines
 
 
 def make_dir(path):

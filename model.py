@@ -67,6 +67,7 @@ class Summarizer(object):
             feed_previous=do_decode)
 
     def _construct_title(self, output_logits):
+        output_logits = np.array(output_logits)
         if len(output_logits.shape) > 1:
             outputs = [int(np.argmax(logit, axis=1))
                        for logit in output_logits]
@@ -273,7 +274,7 @@ class Summarizer(object):
         if update_params:
             return outputs[1], outputs[2], None  # Grad norm, loss, no outputs.
         else:
-            return None, outputs[0], np.array(outputs[1:])  # No grad norm, loss, outputs
+            return None, outputs[0], outputs[1:]  # No grad norm, loss, outputs
 
     def evaluate(self, sess, iteration, test=False):
         bucket_losses = []
@@ -337,8 +338,6 @@ class Summarizer(object):
                                                     bucket_index, True)
                     if next_bucket:
                         bucket_index += 1
-                    if bucket_index >= len(config.BUCKETS):
-                        break
                     iteration += 1
                     prog.update((iteration + 1) % target,
                                 [("train loss", step_loss)])
@@ -349,6 +348,8 @@ class Summarizer(object):
                                    global_step=iteration)
                         if iteration % (10 * skip_step) == 0:
                             self.evaluate(sess, iteration)
+                    if bucket_index >= len(config.BUCKETS):
+                        break
             self.evaluate(sess, iteration, test=True)
 
     def summarize(self, inputs):

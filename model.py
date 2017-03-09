@@ -312,11 +312,13 @@ class Summarizer(object):
             sess.run(tf.global_variables_initializer())
             self._check_restore_parameters(sess, saver)
             iteration = self.global_step.eval()
+            print 'Starting at iteration', iteration
             total_loss = 0
             cur_epoch = iteration / self.num_data_points
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
                 prog = utils.Progbar(target=self.num_data_points /
                                      config.BATCH_SIZE)
+                prog.update(iteration)
                 bucket_index = 0
                 while True:
                     skip_step = self._get_skip_step(iteration)

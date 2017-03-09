@@ -273,7 +273,7 @@ class Summarizer(object):
         if update_params:
             return outputs[1], outputs[2], None  # Grad norm, loss, no outputs.
         else:
-            return None, outputs[0], outputs[1:]  # No grad norm, loss, outputs
+            return None, outputs[0], np.array(outputs[1:])  # No grad norm, loss, outputs
 
     def evaluate(self, sess, iteration, test=False):
         bucket_losses = []

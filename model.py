@@ -89,7 +89,7 @@ class Summarizer(object):
         for i, hl in enumerate(headlines):
             filepath = os.path.join(dir_path, str(i) + '.txt')
             with open(filepath, 'w') as f:
-                f.write(hl)
+                f.write(hl + '\n')
 
     def _setup_data(self):
         print 'Setting up data...',

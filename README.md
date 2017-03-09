@@ -2,6 +2,7 @@
 tl-dr (abstractive text summarization) take 2
 
 ## TODOs
+-   WHY IS THIS SO SLOW
 -   process data
 -   implement utils eval_metrics (i.e. run ROUGE)
 -   tune params maybe according to this?  <https://github.com/tensorflow/models/tree/master/textsum>

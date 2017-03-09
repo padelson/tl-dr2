@@ -105,7 +105,7 @@ class Summarizer(object):
         self.test_data = meta_data[2]
         self.enc_dict = meta_data[3]
         self.dec_dict = meta_data[4]
-        self.num_data_points = meta_data[5]
+        self.num_train_points = meta_data[5]
         self.dev_headlines = meta_data[6]
         self.test_headlines = meta_data[7]
         self._save_gt_headlines('dev', self.dev_headlines)
@@ -243,9 +243,9 @@ class Summarizer(object):
         # How many steps should the model train before it saves weights
         if iteration <= 1:
             return 1  # TODO change this back
-        if iteration < self.num_data_points:
-            return self.num_data_points / 10
-        return self.num_data_points / 2
+        if iteration < self.num_train_points:
+            return self.num_train_points / 10
+        return self.num_train_points / 2
 
     def run_step(self, sess, encoder_inputs, decoder_inputs, decoder_masks,
                  bucket_id, update_params):
@@ -313,10 +313,10 @@ class Summarizer(object):
             iteration = self.global_step.eval()
             print 'Starting at iteration', iteration
             total_loss = 0
-            cur_epoch = iteration / self.num_data_points
+            cur_epoch = iteration / self.num_train_points
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
-                print 'Epoch:', epoch
-                target = self.num_data_points / config.BATCH_SIZE
+                print '\n', 'Epoch:', epoch+1
+                target = self.num_train_points / config.BATCH_SIZE
                 prog = utils.Progbar(target=target)
                 prog.update((iteration+1) % target)
                 bucket_index = 0
@@ -326,7 +326,7 @@ class Summarizer(object):
                                                 config.BUCKETS,
                                                 config.BATCH_SIZE,
                                                 iteration %
-                                                self.num_data_points)
+                                                self.num_train_points)
                     encoder_inputs = batch_data[0]
                     decoder_inputs = batch_data[1]
                     decoder_masks = batch_data[2]

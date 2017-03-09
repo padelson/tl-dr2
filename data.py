@@ -96,10 +96,10 @@ def split_data(data_path, buckets):
     dec_vocab = _read_and_split_file(os.path.join(data_path, 'dec_vocab.txt'))
     enc_dict = {enc_vocab[i]: i for i in range(len(enc_vocab))}
     dec_dict = {dec_vocab[i]: i for i in range(len(dec_vocab))}
-    num_samples = len(headlines)
     train, dev, test, dev_headlines, test_headlines = \
         _bucketize_and_split_data(headlines, text, buckets,
                                   enc_dict, dec_dict)
+    num_samples = len(train['dec_input'])
     return train, dev, test, enc_dict, dec_dict, num_samples, \
         dev_headlines, test_headlines
 

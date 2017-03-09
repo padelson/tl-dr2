@@ -329,14 +329,14 @@ class Summarizer(object):
                     decoder_inputs = batch_data[1]
                     decoder_masks = batch_data[2]
                     next_bucket = batch_data[3]
-                    if next_bucket:
-                        bucket_index += 1
-                    if bucket_index > len(config.BUCKETS):
-                        break
                     _, step_loss, _ = self.run_step(sess, encoder_inputs,
                                                     decoder_inputs,
                                                     decoder_masks,
                                                     bucket_index, True)
+                    if next_bucket:
+                        bucket_index += 1
+                    if bucket_index >= len(config.BUCKETS):
+                        break
                     prog.update(iteration + 1, [("train loss", step_loss)])
                     total_loss += step_loss
                     iteration += 1

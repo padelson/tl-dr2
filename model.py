@@ -335,7 +335,6 @@ class Summarizer(object):
                     total_loss += step_loss
                     iteration += 1
                     if iteration % skip_step == 0:
-                        print 'saving to: ', self.checkpoint_path
                         saver.save(sess, os.path.join(self.checkpoint_path,
                                                       'summarizer'),
                                    global_step=iteration)

@@ -337,9 +337,9 @@ class Summarizer(object):
                         bucket_index += 1
                     if bucket_index >= len(config.BUCKETS):
                         break
+                    iteration += 1
                     prog.update(iteration + 1, [("train loss", step_loss)])
                     total_loss += step_loss
-                    iteration += 1
                     if iteration % skip_step == 0:
                         saver.save(sess, os.path.join(self.checkpoint_path,
                                                       'summarizer'),

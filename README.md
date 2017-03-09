@@ -2,7 +2,6 @@
 tl-dr (abstractive text summarization) take 2
 
 ## TODOs
--   WHY IS THIS SO SLOW
 -   fix sentence construction
 -   process data
 -   implement utils eval_metrics (i.e. run ROUGE)

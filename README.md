@@ -2,11 +2,14 @@
 tl-dr (abstractive text summarization) take 2
 
 ## TODOs
--   run textsum model
--   write model https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/legacy_seq2seq/python/ops/seq2seq.py
--   write main function/training harness thing  https://github.com/chiphuyen/tf-stanford-tutorials/tree/master/assignments/chatbot
 -   process data
--   play with shit
+-   implement utils eval_metrics (i.e. run ROUGE)
+-   tune params maybe according to this?  <https://github.com/tensorflow/models/tree/master/textsum>
+-   fix failed call to cuInit: CUDA_ERROR_UNKNOWN
+-   make sure it works lol
+-   comment code
+-   update bot quotes
+-   ensure model is going as fast as it can
 
 ## shit we might play with
 -   QRNN: <https://github.com/icoxfog417/tensorflow_qrnn>

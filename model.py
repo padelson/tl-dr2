@@ -67,7 +67,7 @@ class Summarizer(object):
             feed_previous=do_decode)
 
     def _construct_title(self, output_logits):
-        with open('output_logits.txt') as f:
+        with open('output_logits.txt', 'w') as f:
             f.write(str(output_logits))
         output_logits = np.array(output_logits)
         if len(output_logits.shape) > 1:

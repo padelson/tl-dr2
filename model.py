@@ -67,6 +67,8 @@ class Summarizer(object):
             feed_previous=do_decode)
 
     def _construct_title(self, output_logits):
+        with open('output_logits.txt') as f:
+            f.write(str(output_logits))
         output_logits = np.array(output_logits)
         if len(output_logits.shape) > 1:
             outputs = [int(np.argmax(logit, axis=1))
@@ -342,13 +344,11 @@ class Summarizer(object):
                     prog.update((iteration + 1) % target,
                                 [("train loss", step_loss)])
                     total_loss += step_loss
-                    if iteration % skip_step == 0:
+                    if bucket_index >= len(config.BUCKETS):
                         saver.save(sess, os.path.join(self.checkpoint_path,
                                                       'summarizer'),
-                                   global_step=iteration)
-                        if iteration % (10 * skip_step) == 0:
-                            self.evaluate(sess, iteration)
-                    if bucket_index >= len(config.BUCKETS):
+                                                      global_step=iteration)
+                        self.evaluate(sess, iteration)
                         break
             self.evaluate(sess, iteration, test=True)
 

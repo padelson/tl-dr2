@@ -90,8 +90,8 @@ def _bucketize_and_split_data(headlines, text, buckets, enc_dict, dec_dict):
 
 def split_data(data_path, buckets):
     # TODO comply with actual format
-    headlines = _read_and_split_file(os.path.join(data_path, 'headlines.txt'))
-    text = _read_and_split_file(os.path.join(data_path, 'text.txt'))
+    headlines = _read_and_split_file(os.path.join(data_path, 'headlines2.txt'))
+    text = _read_and_split_file(os.path.join(data_path, 'text2.txt'))
     enc_vocab = _read_and_split_file(os.path.join(data_path, 'enc_vocab.txt'))
     dec_vocab = _read_and_split_file(os.path.join(data_path, 'dec_vocab.txt'))
     enc_dict = {enc_vocab[i]: i for i in range(len(enc_vocab))}

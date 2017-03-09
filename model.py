@@ -295,8 +295,7 @@ class Summarizer(object):
             loss_text = 'Test bucket:', bucket_index, 'Loss:', step_loss
             print loss_text
             bucket_losses.append(loss_text)
-            summaries.append(self._construct_title(decoder_inputs),
-                             self._construct_title(output_logits))
+            summaries.append(self._construct_title(output_logits))
         path = os.path.join(self.results_path,
                             'iter_' + str(iteration))
         if test:
@@ -316,9 +315,10 @@ class Summarizer(object):
             total_loss = 0
             cur_epoch = iteration / self.num_data_points
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
-                prog = utils.Progbar(target=self.num_data_points /
-                                     config.BATCH_SIZE)
-                prog.update(iteration)
+                print 'Epoch:', epoch
+                target = self.num_data_points / config.BATCH_SIZE
+                prog = utils.Progbar(target=target)
+                prog.update((iteration+1) % target)
                 bucket_index = 0
                 while True:
                     skip_step = self._get_skip_step(iteration)
@@ -340,7 +340,8 @@ class Summarizer(object):
                     if bucket_index >= len(config.BUCKETS):
                         break
                     iteration += 1
-                    prog.update(iteration + 1, [("train loss", step_loss)])
+                    prog.update((iteration + 1) % target,
+                                [("train loss", step_loss)])
                     total_loss += step_loss
                     if iteration % skip_step == 0:
                         saver.save(sess, os.path.join(self.checkpoint_path,

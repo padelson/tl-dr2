@@ -5,7 +5,7 @@
 # train/summarize
 import argparse
 
-from model import Encoder, Decoder, Summarizer
+from model import Summarizer
 
 
 def setup_argparse():
@@ -20,12 +20,8 @@ def setup_argparse():
 if __name__ == '__main__':
     parser = setup_argparse()
     args = parser.parse_args()
-    # encoder = Encoder()
-    # decoder = Decoder()
-    encoder = None
-    decoder = None
     if args.train:
-        summarizer = Summarizer(encoder, decoder, args.data_path,
+        summarizer = Summarizer(args.data_path,
                                 True, args.sess_name)
         summarizer.train()
     if args.sum:

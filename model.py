@@ -9,51 +9,6 @@ import data
 import utils
 
 
-class Encoder(object):
-    def __init__(self, size):
-        self.size = size
-
-    def encode(self, inputs, masks, encoder_state_input):
-        """
-        In a generalized encode function, you pass in your inputs,
-        masks, and an initial
-        hidden state input into this function.
-
-        :param inputs: Symbolic representations of your input
-        :param masks: this is to make sure tf.nn.dynamic_rnn doesn't iterate
-                      through masked steps
-        :param encoder_state_input: (Optional) pass this as initial hidden
-                                    state to tf.nn.dynamic_rnn to build
-                                    conditional representations
-        :return: an encoded representation of your input.
-                 It can be context-level representation, word-level
-                 representation, or both.
-        """
-        # TODO
-        return
-
-
-class Decoder(object):
-    def __init__(self, output_size):
-        self.output_size = output_size
-
-    def decode(self, knowledge_rep):
-            """
-            takes in a knowledge representation
-            and output a probability estimation over
-            all paragraph tokens on which token should be
-            the start of the answer span, and which should be
-            the end of the answer span.
-
-            :param knowledge_rep: it is a representation of the paragraph and
-                                  question, decided by how you choose to
-                                  implement the encoder
-            :return:
-            """
-            # TODO
-            return
-
-
 class Summarizer(object):
     def _seq_f(self, encoder_inputs, decoder_inputs, do_decode):
         return tf.nn.seq2seq.embedding_attention_seq2seq(
@@ -169,27 +124,29 @@ class Summarizer(object):
         single_cell = tf.nn.rnn_cell.GRUCell(config.HIDDEN_SIZE)
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
+        training = self.training_placeholder
         self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
                                     self.encoder_inputs,
                                     self.decoder_inputs,
                                     self.targets,
                                     self.decoder_masks,
                                     config.BUCKETS,
-                                    lambda x, y: self._seq_f(x, y, self.training_placeholder),
+                                    lambda x, y: self._seq_f(x, y, training),
                                     softmax_loss_function=self.softmax_loss
                                     )
-            # If we use output projection, we need to project outputs for decoding.
+        # If we use output projection, we need to project outputs for decoding.
         cur = None
         bucket = 0
+
         def do_nothing(): return cur
 
         def project_outputs():
             if self.output_projection:
                     return [tf.matmul(output,
-                                      self.output_projection[0]) + self.output_projection[1]
-                                      for output in self.outputs[bucket]]
+                            self.output_projection[0]) +
+                            self.output_projection[1]
+                            for output in self.outputs[bucket]]
             return tf.constant(False)
-        # self.projected = tf.cond(self.training_placeholder, do_nothing, project_outputs)
 
         for bucket in xrange(len(config.BUCKETS)):
             cur = self.outputs[bucket]
@@ -197,13 +154,12 @@ class Summarizer(object):
                                            do_nothing,
                                            project_outputs)
 
-
         print 'Took', time.time() - start, 'seconds'
 
     def _create_optimizer(self):
         print 'Creating optimizer...  ',
         start = time.time()
-        with tf.variable_scope('training') as scope:
+        with tf.variable_scope('training'):
             self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False,
                                            name='global_step')
             if self.create_opt:
@@ -223,9 +179,7 @@ class Summarizer(object):
                     print('Created opt for bucket {}'.format(bucket))
         print 'Took', time.time() - start, 'seconds'
 
-    def __init__(self, encoder, decoder, data_path, create_opt, sess_name):
-        self.encoder = encoder
-        self.decoder = decoder
+    def __init__(self, data_path, create_opt, sess_name):
         self.data_path = data_path
         self.create_opt = create_opt
         self.sess_name = sess_name
@@ -297,7 +251,7 @@ class Summarizer(object):
             bucket_losses.append(loss_text)
             output_logits = np.array(output_logits)
             for i in xrange(config.BATCH_SIZE):
-                summaries.append(self._construct_seq(output_logits[:,i,:]))
+                summaries.append(self._construct_seq(output_logits[:, i, :]))
         path = os.path.join(self.results_path,
                             'iter_' + str(iteration))
         if test:
@@ -320,7 +274,7 @@ class Summarizer(object):
                 print '\n', 'Epoch:', epoch+1
                 target = self.num_train_points / config.BATCH_SIZE
                 prog = utils.Progbar(target=target)
-                prog.update((iteration+1) % target)
+                # prog.update((iteration+1) % target)
                 bucket_index = 0
                 while True:
                     batch_data = data.get_batch(self.train_data, bucket_index,
@@ -345,7 +299,7 @@ class Summarizer(object):
                     if bucket_index >= len(config.BUCKETS):
                         saver.save(sess, os.path.join(self.checkpoint_path,
                                                       'summarizer'),
-                                                      global_step=iteration)
+                                   global_step=iteration)
                         self.evaluate(sess, iteration)
                         break
             self.evaluate(sess, iteration, test=True)

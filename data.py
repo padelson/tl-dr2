@@ -95,13 +95,14 @@ def split_data(data_path, buckets):
     headlines = []
     text = []
 
-    headline_path = '/datadrive/gigaword_parsed/headlines/'
-    text_path = '/datadrive/gigaword_parsed/texts/'
+    headline_path = os.path.join(data_path, 'headlines')
+    text_path = os.path.join(data_path, 'texts')
     for filename in os.listdir(headline_path):
-        headlines += _read_and_split_file(headline_path + filename)
+        headlines += _read_and_split_file(os.path.join(headline_path,
+                                                       filename))
     for filename in os.listdir(text_path):
-        text += _read_and_split_file(text_path + filename)
-    
+        text += _read_and_split_file(os.path.join(text_path, filename))
+
     enc_vocab = _read_and_split_file(os.path.join(data_path, 'enc_vocab.txt'))
     dec_vocab = _read_and_split_file(os.path.join(data_path, 'dec_vocab.txt'))
     enc_dict = {enc_vocab[i]: i for i in range(len(enc_vocab))}

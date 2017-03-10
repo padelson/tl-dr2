@@ -269,10 +269,10 @@ class Summarizer(object):
             iteration = self.global_step.eval()
             print 'Starting at iteration', iteration
             total_loss = 0
-            cur_epoch = iteration / self.num_train_points
+            target = self.num_train_points / config.BATCH_SIZE
+            cur_epoch = iteration / target
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
                 print '\n', 'Epoch:', epoch+1
-                target = self.num_train_points / config.BATCH_SIZE
                 prog = utils.Progbar(target=target)
                 # prog.update((iteration+1) % target)
                 bucket_index = 0

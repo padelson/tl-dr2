@@ -1,1 +1,1 @@
-python 2l-dr.py --train --data_path ./test_data --sess_name 'test'
+python 2l-dr.py --train --data_path /datadrive/gigaword_parsed/ --sess_name 'GRU_Full_Data'

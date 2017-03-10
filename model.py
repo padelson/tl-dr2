@@ -292,6 +292,9 @@ class Summarizer(object):
                                                     bucket_index, True)
                     if next_bucket:
                         bucket_index += 1
+                        print 'next bucket'
+                    else:
+                        print 'not next bucket'
                     iteration += 1
                     prog.update((iteration + 1) % target,
                                 [("train loss", step_loss)])

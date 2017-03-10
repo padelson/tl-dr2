@@ -184,6 +184,7 @@ class Summarizer(object):
                                     )
             # If we use output projection, we need to project outputs for decoding.
         cur = None
+        bucket = 0
         def do_nothing(): return cur
 
         def project_outputs():

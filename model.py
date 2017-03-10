@@ -184,7 +184,7 @@ class Summarizer(object):
                                     )
             # If we use output projection, we need to project outputs for decoding.
 
-        def do_nothing(): return self.outputs[0]
+        def do_nothing(): return tf.constant(True)
 
         def project_outputs():
             if self.output_projection:
@@ -192,9 +192,8 @@ class Summarizer(object):
                     self.outputs[bucket] = [tf.matmul(output,
                                             self.output_projection[0]) + self.output_projection[1]
                                             for output in self.outputs[bucket]]
-            return self.outputs[0]
-        x = tf.cond(self.training_placeholder, do_nothing, project_outputs)
-
+            return tf.constant(False)
+        self.projected = tf.cond(self.training_placeholder, do_nothing, project_outputs)
         print 'Took', time.time() - start, 'seconds'
 
     def _create_optimizer(self):

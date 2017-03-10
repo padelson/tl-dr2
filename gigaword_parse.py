@@ -3,6 +3,7 @@
 import os
 import re
 import time
+import collections
 from string import punctuation
 
 def make_dir(path):
@@ -42,7 +43,7 @@ def getFirstTwoSentences(f):
         text += ' ' + second
     return text
 
-def test(dirname=".", filename="example_data"):
+def process(dirname=".", filename="example_data"):
     f = open(dirname + '/' + filename, 'r')
     h = open('/datadrive/gigaword_parsed/headlines/' + filename, 'w')
     t = open('/datadrive/gigaword_parsed/texts/' + filename, 'w')
@@ -81,6 +82,17 @@ def ostest():
         for dirname,_,filenames in os.walk(path):
             for filename in filenames:
                 process(dirname, filename)
+
+def count_words(path, vocab):
+    vocab[path] += 1
+
+def build_vocab():
+    vocab = collections.defaultdict(int)
+    for i in range(3):
+        path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
+        for dirname,_,filenames in os.walk(path):
+            for filename in filenames:
+                count_words(dirname+'/'+filename, vocab)
 
 start_time = time.time()
 #test()

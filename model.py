@@ -269,12 +269,11 @@ class Summarizer(object):
             print 'Starting at iteration', iteration
             total_loss = 0
             target = int(np.ceil(self.num_train_points /
-                                 float(config.BATCH_SIZE)))
-            cur_epoch = iteration / target
+                                 float(config.BATCH_SIZE))) - 1
+            cur_epoch = iteration / (target+1)
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
                 print '\n', 'Epoch:', epoch+1
                 prog = utils.Progbar(target=target)
-                prog.update((iteration+1) % target)
                 bucket_index = 0
                 while True:
                     batch_data = data.get_batch(self.train_data, bucket_index,

@@ -2,6 +2,8 @@ import os
 
 import numpy as np
 
+import config
+
 
 def _read_and_split_file(path):
     with open(path) as f:
@@ -18,7 +20,7 @@ def _get_bucket(size, buckets):
 
 
 def _pad_vec(vec, size):
-    return vec + [0] * (size - len(vec))
+    return vec + [config.PAD_ID] * (size - len(vec))
 
 
 def _vectorize(vec):

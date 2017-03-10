@@ -48,7 +48,6 @@ class Summarizer(object):
         start = time.time()
         with open(os.path.join(self.sess_dir, 'data_path'), 'w') as f:
             f.write(self.data_path)
-        data_dir = os.listdir(self.data_path)
         meta_data = data.split_data(self.data_path, config.BUCKETS)
         self.train_data = meta_data[0]
         self.dev_data = meta_data[1]
@@ -64,6 +63,9 @@ class Summarizer(object):
         self.enc_vocab = len(self.enc_dict)
         self.dec_vocab = len(self.dec_dict)
         print 'Setting up data took', time.time() - start, 'seconds'
+        print 'Encoder vocab size:', len(self.enc_dict)
+        print 'Encoder vocab size:', len(self.dec_dict)
+        print 'Number of training samples', self.num_train_points
 
     def _setup_sess_dir(self):
         print 'Setting up directory for session'
@@ -289,9 +291,6 @@ class Summarizer(object):
                                                     bucket_index, True)
                     if next_bucket:
                         bucket_index += 1
-                        print 'next bucket'
-                    else:
-                        print 'not next bucket'
                     iteration += 1
                     prog.update((iteration + 1) % target,
                                 [("train loss", step_loss)])

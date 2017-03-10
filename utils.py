@@ -26,7 +26,7 @@ def write_results(summaries, losses, filepath, gt_summaries_path):
     data.make_dir(dir_path)
     for i, sums in enumerate(summaries):
         with open(os.path.join(dir_path, str(i)+'.txt'), 'w') as f:
-            f.write(sums)
+            f.write(sums+'\n')
     # metrics_results = _eval_metrics(dir_path, gt_summaries_path)
     with open(os.path.join(filepath, 'log'), 'w') as f:
         for loss in losses:

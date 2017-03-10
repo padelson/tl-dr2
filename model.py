@@ -184,7 +184,7 @@ class Summarizer(object):
                                     )
             # If we use output projection, we need to project outputs for decoding.
 
-        def id(): return self.outputs
+        def do_nothing(): return self.outputs
 
         def project_outputs():
             if self.output_projection:
@@ -194,7 +194,7 @@ class Summarizer(object):
                                             self.output_projection[0]) + self.output_projection[1]
                                             for output in self.outputs[bucket]]
             return self.outputs
-        self.outputs = tf.cond(self.training_placeholder, id(), project_outputs())
+        self.outputs = tf.cond(self.training_placeholder, do_nothing(), project_outputs())
 
         print 'Took', time.time() - start, 'seconds'
 

@@ -280,7 +280,7 @@ class Summarizer(object):
                     batch_data = data.get_batch(self.train_data, bucket_index,
                                                 config.BUCKETS,
                                                 config.BATCH_SIZE,
-                                                iteration % target)
+                                                iteration % (target+1))
                     encoder_inputs = batch_data[0]
                     decoder_inputs = batch_data[1]
                     decoder_masks = batch_data[2]

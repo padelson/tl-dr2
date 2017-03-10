@@ -290,6 +290,7 @@ class Summarizer(object):
                                                     decoder_masks,
                                                     bucket_index, True)
                     if next_bucket:
+                        print 'next bucket'
                         bucket_index += 1
                     iteration += 1
                     prog.update((iteration + 1) % target,

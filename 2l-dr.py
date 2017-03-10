@@ -25,6 +25,6 @@ if __name__ == '__main__':
                                 True, args.sess_name)
         summarizer.train()
     if args.sum:
-        summarizer = Summarizer(encoder, decoder, args.data_path,
+        summarizer = Summarizer(args.data_path,
                                 False, args.sess_name)
         summarizer.summarize(args.input_path)

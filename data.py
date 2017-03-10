@@ -91,7 +91,6 @@ def _bucketize_and_split_data(headlines, text, buckets, enc_dict, dec_dict):
 
 
 def split_data(data_path, buckets):
-    # TODO comply with actual format
     headlines = []
     text = []
 

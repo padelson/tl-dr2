@@ -1,3 +1,7 @@
+<pad>
+<unk>
+<s>
+<\s>
 the
 to
 of
@@ -493,9 +497,3 @@ brought
 until
 reactor
 previous
-past
-full
-land
-Jim
-drug
-<unk>

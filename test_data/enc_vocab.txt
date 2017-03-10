@@ -1,3 +1,7 @@
+<pad>
+<unk>
+<s>
+<\s>
 the
 of
 to
@@ -493,9 +497,3 @@ Washington
 human
 fell
 marks
-man
-Court
-Khmer
-reached
-accord
-<unk>

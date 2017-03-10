@@ -293,7 +293,7 @@ class Summarizer(object):
                         print 'next bucket'
                         bucket_index += 1
                     iteration += 1
-                    prog.update((iteration + 1) % target,
+                    prog.update(iteration % (target+1),
                                 [("train loss", step_loss)])
                     total_loss += step_loss
                     if bucket_index >= len(config.BUCKETS):

@@ -194,7 +194,7 @@ class Summarizer(object):
                                             self.output_projection[0]) + self.output_projection[1]
                                             for output in self.outputs[bucket]]
             return self.outputs
-        self.outputs = tf.cound(self.training_placeholder, id(), project_outputs())
+        self.outputs = tf.cond(self.training_placeholder, id(), project_outputs())
 
         print 'Took', time.time() - start, 'seconds'
 

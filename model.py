@@ -68,7 +68,6 @@ class Summarizer(object):
 
     def _construct_seq(self, output_logits):
         output_logits = np.array(output_logits)
-        print output_logits.shape
         outputs = [int(np.argmax(logit)) for logit in output_logits]
         # If there is an EOS symbol in outputs, cut them at that point.
         if config.EOS_ID in outputs:

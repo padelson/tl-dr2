@@ -300,7 +300,8 @@ class Summarizer(object):
             print loss_text
             bucket_losses.append(loss_text)
             print np.array(output_logits).shape
-            summaries.append(self._construct_seq(output_logits))
+            for i in xrange(config.BATCH_SIZE):
+                summaries.append(self._construct_seq(output_logits[:,i,:]))
         path = os.path.join(self.results_path,
                             'iter_' + str(iteration))
         if test:

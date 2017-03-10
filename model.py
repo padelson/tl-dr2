@@ -188,13 +188,12 @@ class Summarizer(object):
 
         def project_outputs():
             if self.output_projection:
-                print 'projecting outputs for decoding'
                 for bucket in xrange(len(config.BUCKETS)):
                     self.outputs[bucket] = [tf.matmul(output,
                                             self.output_projection[0]) + self.output_projection[1]
                                             for output in self.outputs[bucket]]
             return self.outputs
-        self.outputs = tf.cond(self.training_placeholder, do_nothing(), project_outputs())
+        self.outputs = tf.cond(self.training_placeholder, do_nothing, project_outputs)
 
         print 'Took', time.time() - start, 'seconds'
 

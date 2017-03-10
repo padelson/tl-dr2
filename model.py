@@ -66,7 +66,7 @@ class Summarizer(object):
             output_projection=self.output_projection,
             feed_previous=do_decode)
 
-    def _construct_title(self, output_logits):
+    def _construct_seq(self, output_logits):
         output_logits = np.array(output_logits)
         if len(output_logits.shape) > 1:
             outputs = [int(np.argmax(logit, axis=1))
@@ -193,6 +193,7 @@ class Summarizer(object):
                                         )
             # If we use output projection, we need to project outputs for decoding.
             if self.output_projection:
+                print 'projecting outputs for decoding'
                 for bucket in xrange(len(config.BUCKETS)):
                     self.outputs[bucket] = [tf.matmul(output,
                                             self.output_projection[0]) + self.output_projection[1]
@@ -294,7 +295,7 @@ class Summarizer(object):
             print loss_text
             bucket_losses.append(loss_text)
             print np.array(output_logits).shape
-            summaries.append(self._construct_title(output_logits))
+            summaries.append(self._construct_seq(output_logits))
         path = os.path.join(self.results_path,
                             'iter_' + str(iteration))
         if test:
@@ -362,5 +363,5 @@ class Summarizer(object):
                                                 decoder_inputs,
                                                 decoder_masks,
                                                 bucket_index, True)
-            title = self.construct_title(output_logits)
+            title = self.construct_seq(output_logits)
             print(title)

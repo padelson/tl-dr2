@@ -30,8 +30,8 @@ def _vectorize(vec):
 
 def _one_hot_and_mask_data(hl, txt, mask_size, enc_dict, dec_dict):
     txt_size, hl_size = mask_size
-    hl_vec = _vectorize(_pad_vec(dec_dict['<s>']+[dec_dict.get(w, dec_dict['<unk>'])
-                                 for w in hl.split(' ')]+dec_dict['<\s>'], hl_size))
+    hl_vec = _vectorize(_pad_vec([dec_dict['<s>']]+[dec_dict.get(w, dec_dict['<unk>'])
+                                 for w in hl.split(' ')]+[dec_dict['<\s>']], hl_size))
     txt_vec = _pad_vec([enc_dict.get(w, enc_dict['<unk>'])
                         for w in txt.split(' ')], txt_size)
     txt_vec = _vectorize(list(reversed(txt_vec)))

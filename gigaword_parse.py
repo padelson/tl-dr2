@@ -41,7 +41,7 @@ def getFirstTwoSentences(f):
     second = grabContents(f, "P")
     if second is not None:
         text += ' ' + second
-    return text
+    return ' '.join(text.split(' ')[:200])
 
 def process(dirname=".", filename="example_data"):
     f = open(dirname + '/' + filename, 'r')
@@ -89,18 +89,18 @@ def count_words(filename, vocab, dist):
 
     #h = open('test_data/headlines2.txt', 'r')
     #t = open('test_data/text2.txt', 'r')
-    
+
     for headline in h:
         headline = headline.translate(None, punctuation+'\n').split(' ')
         text = t.readline().translate(None, punctuation+'\n').split(' ')
 
         dist[(len(headline)/5, len(text)/10)] += 1
-        
+
         for i, word in enumerate(headline):
             vocab[word] += 1
         for i, word in enumerate(text):
             vocab[word] += 1
-    
+
     h.close()
     t.close()
 
@@ -116,7 +116,7 @@ def build_vocab():
     v = open('vocab.txt', 'w')
     o = open('output.txt', 'w')
     v.write('<pad>\n<unk>\n<s>\n<\s>\n')
-    
+
     for i in range(3):
         path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
         for _,_,filenames in os.walk(path):
@@ -126,7 +126,7 @@ def build_vocab():
     top10000 = sorted(vocab.items(), key=lambda x: x[1], reverse=True)[:10000]
     for entry in top10000:
         v.write(entry[0] + '\n')
-    
+
     write(o, dist)
     o.close()
     v.close()

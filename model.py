@@ -300,9 +300,9 @@ class Summarizer(object):
                 summaries.append(self._construct_seq(output_logits[:,i,:]))
         path = os.path.join(self.results_path,
                             'iter_' + str(iteration))
-        data.make_dir(path)
         if test:
             path += '_test'
+        data.make_dir(path)
         gt_path = self.test_headlines_path if test else self.dev_headlines_path
         utils.write_results(summaries, bucket_losses, path, gt_path)
         print 'Wrote results to', path

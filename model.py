@@ -137,6 +137,8 @@ class Summarizer(object):
         self.encoder_inputs = []
         self.decoder_inputs = []
         self.decoder_masks = []
+        self.training_placeholder = tf.placeholder(tf.bool, shape=[],
+                                                   name='training')
         for i in xrange(config.BUCKETS[-1][0]):  # Last bucket is the biggest.
             self.encoder_inputs.append(tf.placeholder(tf.int32, shape=[None],
                                        name='encoder{}'.format(i)))
@@ -171,33 +173,29 @@ class Summarizer(object):
         single_cell = tf.nn.rnn_cell.GRUCell(config.HIDDEN_SIZE)
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
-        if self.update_params:
-            self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
-                                        self.encoder_inputs,
-                                        self.decoder_inputs,
-                                        self.targets,
-                                        self.decoder_masks,
-                                        config.BUCKETS,
-                                        lambda x, y: self._seq_f(x, y, False),
-                                        softmax_loss_function=self.softmax_loss
-                                        )
-        else:
-            self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
-                                        self.encoder_inputs,
-                                        self.decoder_inputs,
-                                        self.targets,
-                                        self.decoder_masks,
-                                        config.BUCKETS,
-                                        lambda x, y: self._seq_f(x, y, True),
-                                        softmax_loss_function=self.softmax_loss
-                                        )
+        self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
+                                    self.encoder_inputs,
+                                    self.decoder_inputs,
+                                    self.targets,
+                                    self.decoder_masks,
+                                    config.BUCKETS,
+                                    lambda x, y: self._seq_f(x, y, self.training_placeholder),
+                                    softmax_loss_function=self.softmax_loss
+                                    )
             # If we use output projection, we need to project outputs for decoding.
+
+        def id(): return self.outputs
+
+        def project_outputs():
             if self.output_projection:
                 print 'projecting outputs for decoding'
                 for bucket in xrange(len(config.BUCKETS)):
                     self.outputs[bucket] = [tf.matmul(output,
                                             self.output_projection[0]) + self.output_projection[1]
                                             for output in self.outputs[bucket]]
+            return self.outputs
+        self.outputs = tf.cound(self.training_placeholder, id(), project_outputs())
+
         print 'Took', time.time() - start, 'seconds'
 
     def _create_optimizer(self):
@@ -206,7 +204,7 @@ class Summarizer(object):
         with tf.variable_scope('training') as scope:
             self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False,
                                            name='global_step')
-            if self.update_params:
+            if self.create_opt:
                 self.optimizer = tf.train.GradientDescentOptimizer(config.LR)
                 trainables = tf.trainable_variables()
                 self.gradient_norms = []
@@ -223,11 +221,11 @@ class Summarizer(object):
                     print('Created opt for bucket {}'.format(bucket))
         print 'Took', time.time() - start, 'seconds'
 
-    def __init__(self, encoder, decoder, data_path, update_params, sess_name):
+    def __init__(self, encoder, decoder, data_path, create_opt, sess_name):
         self.encoder = encoder
         self.decoder = decoder
         self.data_path = data_path
-        self.update_params = update_params
+        self.create_opt = create_opt
         self.sess_name = sess_name
 
         self._setup_sess_dir()
@@ -257,6 +255,7 @@ class Summarizer(object):
             input_feed[self.decoder_masks[step].name] = decoder_masks[step]
         last_target = self.decoder_inputs[decoder_size].name
         input_feed[last_target] = np.zeros([config.BATCH_SIZE], dtype=np.int32)
+        input_feed[self.training_placeholder] = [update_params] * config.BATCH_SIZE
 
         # output feed: depends on whether we do a backward step or not.
         if update_params:
@@ -305,7 +304,6 @@ class Summarizer(object):
         print 'Wrote results to', path
 
     def train(self):
-        assert self.update_params
         saver = tf.train.Saver()
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())

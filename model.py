@@ -49,8 +49,6 @@ class Summarizer(object):
         with open(os.path.join(self.sess_dir, 'data_path'), 'w') as f:
             f.write(self.data_path)
         data_dir = os.listdir(self.data_path)
-        if 'DATA_PROCESSED' not in data_dir:
-            raise Exception('Data not processed')
         meta_data = data.split_data(self.data_path, config.BUCKETS)
         self.train_data = meta_data[0]
         self.dev_data = meta_data[1]

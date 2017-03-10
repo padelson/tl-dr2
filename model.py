@@ -300,6 +300,7 @@ class Summarizer(object):
                 summaries.append(self._construct_seq(output_logits[:,i,:]))
         path = os.path.join(self.results_path,
                             'iter_' + str(iteration))
+        data.make_dir(path)
         if test:
             path += '_test'
         gt_path = self.test_headlines_path if test else self.dev_headlines_path

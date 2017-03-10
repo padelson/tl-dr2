@@ -113,9 +113,11 @@ def write(f, d):
 def build_vocab():
     vocab = collections.defaultdict(int)
     dist = collections.defaultdict(int)
-    v = open('vocab.txt', 'w')
-    o = open('output.txt', 'w')
-    v.write('<pad>\n<unk>\n<s>\n<\s>\n')
+    enc = open('/datadrive/gigaword_parsed/enc_vocab.txt', 'w')
+    dec = open('/datadrive/gigaword_parsed/dec_vocab.txt', 'w')
+    out = open('output.txt', 'w')
+    enc.write('<pad>\n<unk>\n<s>\n<\s>\n')
+    dec.write('<pad>\n<unk>\n<s>\n<\s>\n')
 
     for i in range(3):
         path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
@@ -125,14 +127,15 @@ def build_vocab():
     #count_words(None, vocab, dist)
     top10000 = sorted(vocab.items(), key=lambda x: x[1], reverse=True)[:10000]
     for entry in top10000:
-        v.write(entry[0] + '\n')
-
-    write(o, dist)
-    o.close()
-    v.close()
+        enc.write(entry[0] + '\n')
+        dec.write(entry[0] + '\n')
+    write(out, dist)
+    out.close()
+    enc.close()
+    dec.close()
 
 start_time = time.time()
 #test()
-#build_vocab()
-ostest()
+build_vocab()
+#ostest()
 print 'time %f' % (time.time() - start_time)

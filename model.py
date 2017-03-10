@@ -193,7 +193,7 @@ class Summarizer(object):
                                       self.output_projection[0]) + self.output_projection[1]
                                       for output in self.outputs[bucket]]
             return tf.constant(False)
-        self.projected = tf.cond(self.training_placeholder, do_nothing, project_outputs)
+        # self.projected = tf.cond(self.training_placeholder, do_nothing, project_outputs)
 
         for bucket in xrange(len(config.BUCKETS)):
             cur = self.outputs[bucket]

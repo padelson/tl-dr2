@@ -136,6 +136,7 @@ def build_vocab():
 
 start_time = time.time()
 #test()
+ostest()
 build_vocab()
 #ostest()
 print 'time %f' % (time.time() - start_time)

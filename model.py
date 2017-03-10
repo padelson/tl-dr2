@@ -116,6 +116,7 @@ class Summarizer(object):
         self.inv_dec_dict = {v: k for k, v in self.dec_dict.iteritems()}
         self.enc_vocab = len(self.enc_dict)
         self.dec_vocab = len(self.dec_dict)
+        print 'Vocab sizes:', self.enc_vocab, self.dec_vocab
         # self._save_dev_gt_headlines()
         print 'Setting up data took', time.time() - start, 'seconds'
 

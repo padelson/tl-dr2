@@ -298,8 +298,8 @@ class Summarizer(object):
             loss_text = 'Test bucket:', bucket_index, 'Loss:', step_loss
             print loss_text
             bucket_losses.append(loss_text)
-            for output_logit in output_logits:
-                summaries.append(self._construct_title(output_logit))
+            print output_logits.shape
+            summaries.append(self._construct_title(output_logits))
         path = os.path.join(self.results_path,
                             'iter_' + str(iteration))
         if test:

@@ -68,6 +68,7 @@ class Summarizer(object):
 
     def _construct_seq(self, output_logits):
         output_logits = np.array(output_logits)
+        print output_logits.shape
         if len(output_logits.shape) > 1:
             outputs = [int(np.argmax(logit, axis=1))
                        for logit in output_logits]

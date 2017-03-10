@@ -1,9 +1,9 @@
 import collections
 
 if __name__ == '__main__':
-    n = 5500
+    n = 500
     vocab = collections.defaultdict(int)
-    with open('text.txt') as f:
+    with open('text2.txt') as f:
         for line in f:
             for w in line.split():
                 vocab[w] += 1
@@ -12,7 +12,7 @@ if __name__ == '__main__':
         for word in enc_vocab:
             f.write(word[0]+'\n')
         f.write('<unk>')
-    with open('headlines.txt') as f:
+    with open('headlines2.txt') as f:
         for line in f:
             for w in line.split():
                 vocab[w] += 1

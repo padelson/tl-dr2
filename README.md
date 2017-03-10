@@ -11,7 +11,6 @@ tl-dr (abstractive text summarization) take 2
 -   make sure it works lol
 -   comment code
 -   update bot quotes
--   ensure model is going as fast as it can
 
 ## shit we might play with
 -   QRNN: <https://github.com/icoxfog417/tensorflow_qrnn>

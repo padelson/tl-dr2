@@ -203,6 +203,7 @@ class Summarizer(object):
     def run_step(self, sess, encoder_inputs, decoder_inputs, decoder_masks,
                  bucket_id, update_params):
         encoder_size, decoder_size = config.BUCKETS[bucket_id]
+        start = time.time()
         input_feed = {}
         for step in xrange(encoder_size):
             input_feed[self.encoder_inputs[step].name] = encoder_inputs[step]
@@ -212,7 +213,8 @@ class Summarizer(object):
         last_target = self.decoder_inputs[decoder_size].name
         input_feed[last_target] = np.zeros([config.BATCH_SIZE], dtype=np.int32)
         input_feed[self.training_placeholder] = update_params
-
+        print time.time() - start, 'to set up input feed'
+        start = time.time()
         # output feed: depends on whether we do a backward step or not.
         if update_params:
             output_feed = [self.train_ops[bucket_id],  # update that does SGD.
@@ -222,8 +224,10 @@ class Summarizer(object):
             output_feed = [self.losses[bucket_id]]  # loss for this batch.
             for step in xrange(decoder_size):  # output logits.
                 output_feed.append(self.outputs[bucket_id][step])
-
+        print time.time() - start, 'to set up output feed'
+        start = time.time()
         outputs = sess.run(output_feed, input_feed)
+        print time.time() - start, 'to runs sess'
         if update_params:
             return outputs[1], outputs[2], None  # Grad norm, loss, no outputs.
         else:
@@ -274,17 +278,14 @@ class Summarizer(object):
             cur_epoch = iteration / target
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
                 print '\n', 'Epoch:', epoch+1
-                prog = utils.Progbar(target=target)
+                # prog = utils.Progbar(target=target)
                 # prog.update((iteration+1) % target)
                 bucket_index = 0
                 while True:
-                    start = time.time()
                     batch_data = data.get_batch(self.train_data, bucket_index,
                                                 config.BUCKETS,
                                                 config.BATCH_SIZE,
                                                 iteration % (target+1))
-                    print time.time() - start, 'seconds to get batch'
-                    start = time.time()
                     encoder_inputs = batch_data[0]
                     decoder_inputs = batch_data[1]
                     decoder_masks = batch_data[2]
@@ -293,12 +294,11 @@ class Summarizer(object):
                                                     decoder_inputs,
                                                     decoder_masks,
                                                     bucket_index, True)
-                    print time.time() - start, 'seconds to run step'
                     if next_bucket:
                         bucket_index += 1
                     iteration += 1
-                    prog.update(iteration % (target+1),
-                                [("train loss", step_loss)])
+                    # prog.update(iteration % (target+1),
+                    #             [("train loss", step_loss)])
                     total_loss += step_loss
                     if bucket_index >= len(config.BUCKETS):
                         saver.save(sess, os.path.join(self.checkpoint_path,

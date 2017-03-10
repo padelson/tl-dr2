@@ -29,7 +29,7 @@ def grabContents(f, tag):
     while line != "</%s>\n" % tag:
         contents += line.replace('\n', ' ')
         line = readline(f)
-    return contents
+    return ' '.join(contents.split(' ')[:35])
 
 # assuming you have an open readable file...
 # read the <TEXT> until </TEXT>

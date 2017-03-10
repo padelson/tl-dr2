@@ -278,10 +278,13 @@ class Summarizer(object):
                 # prog.update((iteration+1) % target)
                 bucket_index = 0
                 while True:
+                    start = time.time()
                     batch_data = data.get_batch(self.train_data, bucket_index,
                                                 config.BUCKETS,
                                                 config.BATCH_SIZE,
                                                 iteration % (target+1))
+                    print time.time() - start, 'seconds to get batch'
+                    start = time.time()
                     encoder_inputs = batch_data[0]
                     decoder_inputs = batch_data[1]
                     decoder_masks = batch_data[2]
@@ -290,6 +293,7 @@ class Summarizer(object):
                                                     decoder_inputs,
                                                     decoder_masks,
                                                     bucket_index, True)
+                    print time.time() - start, 'seconds to run step'
                     if next_bucket:
                         bucket_index += 1
                     iteration += 1

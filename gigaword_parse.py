@@ -83,18 +83,56 @@ def ostest():
             for filename in filenames:
                 process(dirname, filename)
 
-def count_words(path, vocab):
-    vocab[path] += 1
+def count_words(filename, vocab, dist):
+    h = open('/datadrive/gigaword_parsed/headlines/' + filename, 'r')
+    t = open('/datadrive/gigaword_parsed/texts/' + filename, 'r')
+
+    #h = open('test_data/headlines2.txt', 'r')
+    #t = open('test_data/text2.txt', 'r')
+    
+    for headline in h:
+        headline = headline.translate(None, punctuation+'\n').split(' ')
+        text = t.readline().translate(None, punctuation+'\n').split(' ')
+
+        dist[(len(headline)/5, len(text)/10)] += 1
+        
+        for i, word in enumerate(headline):
+            vocab[word] += 1
+        for i, word in enumerate(text):
+            vocab[word] += 1
+    
+    h.close()
+    t.close()
+
+def write(f, d):
+    arr = sorted(d.items(), key = lambda x: x[0])
+    for i, elem in enumerate(arr):
+        f.write('%d,%d\t\t' % ((elem[0][0]+1) * 5, (elem[0][1]+1) * 10))
+        f.write('%d\n' % elem[1])
 
 def build_vocab():
     vocab = collections.defaultdict(int)
+    dist = collections.defaultdict(int)
+    v = open('vocab.txt', 'w')
+    o = open('output.txt', 'w')
+    v.write('<pad>\n<unk>\n<s>\n<\s>\n')
+    
     for i in range(3):
         path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
-        for dirname,_,filenames in os.walk(path):
+        for _,_,filenames in os.walk(path):
             for filename in filenames:
-                count_words(dirname+'/'+filename, vocab)
+                count_words(filename, vocab, dist)
+    #count_words(None, vocab, dist)
+    top10000 = sorted(vocab.items(), key=lambda x: x[1], reverse=True)[:10000]
+    for entry in top10000:
+        v.write(entry[0] + '\n')
+    
+    write(o, dist)
+    o.close()
+    v.close()
 
 start_time = time.time()
 #test()
-ostest()
+build_vocab()
+#ostest()
 print 'time %f' % (time.time() - start_time)

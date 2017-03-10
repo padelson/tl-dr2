@@ -36,6 +36,10 @@ def _one_hot_and_mask_data(hl, txt, mask_size, enc_dict, dec_dict):
                                  [dec_dict['<\s>']], hl_size))
     txt_vec = _pad_vec([enc_dict.get(w, enc_dict['<unk>'])
                         for w in txt.split(' ')], txt_size)
+    if max(txt_vec) == 10003:
+        print 'max 10003 reached'
+        print txt
+        print [k for k, v in enc_dict.iteritems() if v == 10003]
     txt_vec = _vectorize(list(reversed(txt_vec)))
     mask = np.ones(hl_size)
     for i in range(len(hl_vec), hl_size):

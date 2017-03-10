@@ -17,6 +17,7 @@ from utils import *
 
 
 prog = Progbar(target=10)
-for i in range(10):
+for i in range(5):
     time.sleep(2)
     prog.update(i+1, [('train loss', i**2)])
+prog.update(0)

@@ -269,7 +269,8 @@ class Summarizer(object):
             iteration = self.global_step.eval()
             print 'Starting at iteration', iteration
             total_loss = 0
-            target = self.num_train_points / config.BATCH_SIZE
+            target = int(np.ceil(self.num_train_points /
+                                 float(config.BATCH_SIZE)))
             cur_epoch = iteration / target
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
                 print '\n', 'Epoch:', epoch+1
@@ -290,7 +291,6 @@ class Summarizer(object):
                                                     decoder_masks,
                                                     bucket_index, True)
                     if next_bucket:
-                        print 'next bucket'
                         bucket_index += 1
                     iteration += 1
                     prog.update(iteration % (target+1),

@@ -67,8 +67,6 @@ class Summarizer(object):
             feed_previous=do_decode)
 
     def _construct_title(self, output_logits):
-        with open('output_logits.txt', 'w') as f:
-            f.write(str(output_logits))
         output_logits = np.array(output_logits)
         if len(output_logits.shape) > 1:
             outputs = [int(np.argmax(logit, axis=1))
@@ -116,8 +114,6 @@ class Summarizer(object):
         self.inv_dec_dict = {v: k for k, v in self.dec_dict.iteritems()}
         self.enc_vocab = len(self.enc_dict)
         self.dec_vocab = len(self.dec_dict)
-        print 'Vocab sizes:', self.enc_vocab, self.dec_vocab
-        # self._save_dev_gt_headlines()
         print 'Setting up data took', time.time() - start, 'seconds'
 
     def _setup_sess_dir(self):
@@ -195,6 +191,12 @@ class Summarizer(object):
                                         lambda x, y: self._seq_f(x, y, True),
                                         softmax_loss_function=self.softmax_loss
                                         )
+            # If we use output projection, we need to project outputs for decoding.
+            if self.output_projection:
+                for bucket in xrange(len(config.BUCKETS)):
+                    self.outputs[bucket] = [tf.matmul(output,
+                                            self.output_projection[0]) + self.output_projection[1]
+                                            for output in self.outputs[bucket]]
         print 'Took', time.time() - start, 'seconds'
 
     def _create_optimizer(self):
@@ -242,14 +244,6 @@ class Summarizer(object):
             saver.restore(sess, ckpt.model_checkpoint_path)
         else:
             print "Initializing fresh parameters"
-
-    def _get_skip_step(self, iteration):
-        # How many steps should the model train before it saves weights
-        if iteration <= 1:
-            return 1  # TODO change this back
-        if iteration < self.num_train_points:
-            return self.num_train_points / 10
-        return self.num_train_points / 2
 
     def run_step(self, sess, encoder_inputs, decoder_inputs, decoder_masks,
                  bucket_id, update_params):
@@ -326,7 +320,6 @@ class Summarizer(object):
                 prog.update((iteration+1) % target)
                 bucket_index = 0
                 while True:
-                    skip_step = self._get_skip_step(iteration)
                     batch_data = data.get_batch(self.train_data, bucket_index,
                                                 config.BUCKETS,
                                                 config.BATCH_SIZE,

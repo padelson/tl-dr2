@@ -4,11 +4,10 @@ tl-dr (abstractive text summarization) take 2
 ## TODOs
 -   fix sentence construction
 -   fix epoch / iteration counting
--   process data
+-   preprocess data (paritition into train, dev, test, and encode into vocab)
 -   implement utils eval_metrics (i.e. run ROUGE)
--   tune params maybe according to this?  <https://github.com/tensorflow/models/tree/master/textsum>
 -   fix failed call to cuInit: CUDA_ERROR_UNKNOWN
--   make sure it works lol
+-   make sure it works lol (esp summarize())
 -   comment code
 -   update bot quotes
 

@@ -49,45 +49,18 @@ def init_data_buckets(n):
 
 
 def _bucketize_data(headlines, text, buckets, enc_dict, dec_dict):
-    train = init_data_buckets(len(buckets))
-    dev = init_data_buckets(len(buckets))
-    test = init_data_buckets(len(buckets))
     data_by_bucket = init_data_buckets(len(buckets))
-    dev_headlines = []
-    test_headlines = []
     for i in range(len(headlines)):
         hl = headlines[i]
         txt = text[i]
         size = (len(txt.split()), len(hl.split()))
         bucket_index = _get_bucket(size, buckets)
-        data_by_bucket[bucket_index]['enc_input'].append(txt)
-        data_by_bucket[bucket_index]['dec_input'].append(hl)
-
-    # for key in data_by_bucket:
-    #     bucket = data_by_bucket[key]
-    #     num_samples = len(bucket['enc_input'])
-    #     split_data_indices = np.random.permutation(np.arange(num_samples))
-    #     for i in range(len(split_data_indices)):
-    #         data_index = split_data_indices[i]
-    #         txt = bucket['enc_input'][data_index]
-    #         hl = bucket['dec_input'][data_index]
-    #         hl_vec, txt_vec, mask = _one_hot_and_mask_data(hl, txt,
-    #                                                        buckets[key],
-    #                                                        enc_dict, dec_dict)
-    #         if i < num_samples * 8 / 10:
-    #             train[key]['enc_input'].append(txt_vec)
-    #             train[key]['dec_input'].append(hl_vec)
-    #             train[key]['dec_masks'].append(mask)
-    #         elif i % 2 == 0:
-    #             dev[key]['enc_input'].append(txt_vec)
-    #             dev[key]['dec_input'].append(hl_vec)
-    #             dev[key]['dec_masks'].append(mask)
-    #             dev_headlines.append(hl)
-    #         else:
-    #             test[key]['enc_input'].append(txt_vec)
-    #             test[key]['dec_input'].append(hl_vec)
-    #             test[key]['dec_masks'].append(mask)
-    #             test_headlines.append(hl)
+        hl_vec, txt_vec, mask = _one_hot_and_mask_data(hl, txt,
+                                                       buckets[bucket_index],
+                                                       enc_dict, dec_dict)
+        data_by_bucket[bucket_index]['enc_input'].append(txt_vec)
+        data_by_bucket[bucket_index]['dec_input'].append(hl_vec)
+        data_by_bucket[bucket_index]['dec_mask'].append(mask)
 
     return data_by_bucket
 

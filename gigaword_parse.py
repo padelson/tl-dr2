@@ -13,6 +13,18 @@ def make_dir(path):
     except OSError:
         pass
 
+def makeDirs():
+    make_dir('/datadrive/gigaword_parsed')
+    make_dir('/datadrive/gigaword_parsed/train')
+    make_dir('/datadrive/gigaword_parsed/dev')
+    make_dir('/datadrive/gigaword_parsed/test')
+    make_dir('/datadrive/gigaword_parsed/train/headlines')
+    make_dir('/datadrive/gigaword_parsed/dev/headlines')
+    make_dir('/datadrive/gigaword_parsed/test/headlines')
+    make_dir('/datadrive/gigaword_parsed/train/texts')
+    make_dir('/datadrive/gigaword_parsed/dev/texts')
+    make_dir('/datadrive/gigaword_parsed/test/texts')
+
 def readline(f):
     line = f.readline()
     if line == "</DOC>\n":
@@ -29,7 +41,7 @@ def grabContents(f, tag):
     while line != "</%s>\n" % tag:
         contents += line.replace('\n', ' ')
         line = readline(f)
-    return ' '.join(contents.split(' ')[:35])
+    return contents.split(' ')
 
 # assuming you have an open readable file...
 # read the <TEXT> until </TEXT>
@@ -41,12 +53,19 @@ def getFirstTwoSentences(f):
     second = grabContents(f, "P")
     if second is not None:
         text += ' ' + second
-    return ' '.join(text.split(' ')[:200])
+    return text.split(' ')
 
-def process(dirname=".", filename="example_data"):
+def process(dirname=".", filename="example_data", file_num=0):
     f = open(dirname + '/' + filename, 'r')
-    h = open('/datadrive/gigaword_parsed/headlines/' + filename, 'w')
-    t = open('/datadrive/gigaword_parsed/texts/' + filename, 'w')
+    if file_num % 10 == 0:
+        h = open('/datadrive/gigaword_parsed/dev/headlines/' + filename, 'w')
+        t = open('/datadrive/gigaword_parsed/dev/texts/' + filename, 'w')
+    elif file_num % 10 == 1:
+        h = open('/datadrive/gigaword_parsed/test/headlines/' + filename, 'w')
+        t = open('/datadrive/gigaword_parsed/test/texts/' + filename, 'w')
+    else:
+        h = open('/datadrive/gigaword_parsed/train/headlines/' + filename, 'w')
+        t = open('/datadrive/gigaword_parsed/train/texts/' + filename, 'w')
     #h = open('headlines.txt', 'w')
     #t = open('text.txt', 'w')
 
@@ -65,8 +84,9 @@ def process(dirname=".", filename="example_data"):
                 while headline is None:
                     headline = grabContents(f, "HEADLINE")
                 text = getFirstTwoSentences(f)
-                h.write(headline+'\n')
-                t.write(text+'\n')
+                if len(headline) <= 25 and len(text) <= 50:
+                    h.write(' '.join(headline)+'\n')
+                    t.write(' '.join(text)+'\n')
             except Exception:
                 #print docline
                 count += 1
@@ -77,11 +97,13 @@ def process(dirname=".", filename="example_data"):
     f.close()
 
 def ostest():
+    file_num = 0
     for i in range(3):
         path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
         for dirname,_,filenames in os.walk(path):
             for filename in filenames:
-                process(dirname, filename)
+                process(dirname, filename, file_num)
+                file_num += 1
 
 def count_words(filename, vocab, dist):
     h = open('/datadrive/gigaword_parsed/headlines/' + filename, 'r')
@@ -136,6 +158,7 @@ def build_vocab():
 
 start_time = time.time()
 #test()
+makeDirs()
 ostest()
 build_vocab()
 #ostest()

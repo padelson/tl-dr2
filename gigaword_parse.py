@@ -41,7 +41,7 @@ def grabContents(f, tag):
     while line != "</%s>\n" % tag:
         contents += line.replace('\n', ' ')
         line = readline(f)
-    return contents.split(' ')
+    return contents
 
 # assuming you have an open readable file...
 # read the <TEXT> until </TEXT>
@@ -54,6 +54,12 @@ def getFirstSentence(f):
     # if second is not None:
     #     text += ' ' + second
     return text.split(' ')
+
+def getHeadline(f):
+    headline = grabContents(f, "HEADLINE")
+    while headline is None:
+        headline = grabContents(f, "HEADLINE")
+    return headline.split(' ')
 
 def process(dirname=".", filename="example_data", file_num=0):
     f = open(dirname + '/' + filename, 'r')

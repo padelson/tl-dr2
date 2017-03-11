@@ -276,9 +276,6 @@ class Summarizer(object):
                                                     bucket_index, True)
                     if next_bucket:
                         bucket_index += 1
-                    iteration += 1
-                    prog.update(iteration % (target+1),
-                                [("train loss", step_loss)])
                     total_loss += step_loss
                     if bucket_index >= len(config.BUCKETS) or \
                        iteration == 20 or iteration % 1000 == 0:
@@ -286,6 +283,9 @@ class Summarizer(object):
                                                       'summarizer'),
                                    global_step=iteration)
                         self.evaluate(sess, iteration)
+                    iteration += 1
+                    prog.update(iteration % (target+1),
+                                [("train loss", step_loss)])
                     if bucket_index >= len(config.BUCKETS):
                         break
             self.evaluate(sess, iteration, test=True)

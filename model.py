@@ -244,6 +244,7 @@ class Summarizer(object):
                 for i in xrange(config.BATCH_SIZE):
                     summaries.append(self._construct_seq(
                                      output_logits[:, i, :]))
+                eval_iter += 1
                 if done:
                     break
             loss_text = 'Test bucket:', bucket_index, 'Loss:', bucket_loss

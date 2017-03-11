@@ -26,7 +26,7 @@ class Summarizer(object):
         outputs = [int(np.argmax(logit)) for logit in output_logits]
         # If there is an EOS symbol in outputs, cut them at that point.
         if config.EOS_ID in outputs:
-            outputs = outputs[:outputs.index(config.EOS_ID)]
+            outputs = outputs[:outputs.index(config.EOS_ID)+1]
         # Print out sentence corresponding to outputs.
         return " ".join([tf.compat.as_str(self.inv_dec_dict[output])
                          for output in outputs])

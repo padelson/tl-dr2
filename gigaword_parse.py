@@ -46,13 +46,13 @@ def grabContents(f, tag):
 # assuming you have an open readable file...
 # read the <TEXT> until </TEXT>
 # throw Exception if the read is bad
-def getFirstTwoSentences(f):
+def getFirstSentence(f):
     text = grabContents(f, "P")
     while text is None:
         text = grabContents(f, "P")
-    second = grabContents(f, "P")
-    if second is not None:
-        text += ' ' + second
+    # second = grabContents(f, "P")
+    # if second is not None:
+    #     text += ' ' + second
     return text.split(' ')
 
 def process(dirname=".", filename="example_data", file_num=0):
@@ -83,7 +83,7 @@ def process(dirname=".", filename="example_data", file_num=0):
                 headline = grabContents(f, "HEADLINE")
                 while headline is None:
                     headline = grabContents(f, "HEADLINE")
-                text = getFirstTwoSentences(f)
+                text = getFirstSentence(f)
                 if len(headline) <= 25 and len(text) <= 50:
                     h.write(' '.join(headline)+'\n')
                     t.write(' '.join(text)+'\n')

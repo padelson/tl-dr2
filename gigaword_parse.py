@@ -57,10 +57,10 @@ def getFirstSentence(f):
 
 def process(dirname=".", filename="example_data", file_num=0):
     f = open(dirname + '/' + filename, 'r')
-    if file_num % 10 == 0:
+    if file_num % 20 == 0:
         h = open('/datadrive/gigaword_parsed/dev/headlines/' + filename, 'w')
         t = open('/datadrive/gigaword_parsed/dev/texts/' + filename, 'w')
-    elif file_num % 10 == 1:
+    elif file_num % 20 == 1:
         h = open('/datadrive/gigaword_parsed/test/headlines/' + filename, 'w')
         t = open('/datadrive/gigaword_parsed/test/texts/' + filename, 'w')
     else:

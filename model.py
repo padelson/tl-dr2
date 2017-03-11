@@ -261,6 +261,10 @@ class Summarizer(object):
         print 'Wrote results to', path
 
     def train(self):
+
+        def get_step_iter(iteration, target):
+            step_iter = iteration % target
+            return target if iteration > 0 and step_iter == 0 else step_iter
         saver = tf.train.Saver()
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -276,10 +280,11 @@ class Summarizer(object):
                 prog = utils.Progbar(target=target)
                 bucket_index = 0
                 while True:
+                    step_iter = get_step_iter(iteration, target)
                     batch_data = data.get_batch(self.train_data, bucket_index,
                                                 config.BUCKETS,
                                                 config.BATCH_SIZE,
-                                                iteration % (target+1))
+                                                step_iter)
                     encoder_inputs = batch_data[0]
                     decoder_inputs = batch_data[1]
                     decoder_masks = batch_data[2]
@@ -299,7 +304,7 @@ class Summarizer(object):
                                    global_step=iteration)
                         self.evaluate(sess, total_loss, iteration)
                     iteration += 1
-                    prog.update(iteration % (target+1),
+                    prog.update(get_step_iter(iteration, target),
                                 [("train loss", step_loss)])
                     if bucket_index >= len(config.BUCKETS):
                         break

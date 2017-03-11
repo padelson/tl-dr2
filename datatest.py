@@ -15,9 +15,20 @@ from utils import *
 #     print step
 #     x = decoder_masks[step]
 
+num_batches = 8
+target = 7
 
-prog = Progbar(target=10)
-for i in range(5):
-    time.sleep(2)
-    prog.update(i+1, [('train loss', i**2)])
-prog.update(0)
+iteration = 0
+for i in range(10):
+    prog = Progbar(target=target)
+    while True:
+        time.sleep(0.5)
+        step_iter = iteration % target
+        if iteration > 0 and step_iter == 0:
+            step_iter = target
+        prog.update(step_iter, [('train loss', i**2)])
+        if iteration > 0 and iteration % target == 0:
+            iteration += 1
+            break
+        iteration += 1
+    print

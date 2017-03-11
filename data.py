@@ -36,10 +36,6 @@ def _one_hot_and_mask_data(hl, txt, mask_size, enc_dict, dec_dict):
                                  [dec_dict['<\s>']], hl_size))
     txt_vec = _pad_vec([enc_dict.get(w, enc_dict['<unk>'])
                         for w in txt.split(' ')], txt_size)
-    if max(txt_vec) == 10003:
-        print 'max 10003 reached'
-        print txt
-        print [k for k, v in enc_dict.iteritems() if v == 10003]
     txt_vec = _vectorize(list(reversed(txt_vec)))
     mask = np.ones(hl_size)
     for i in range(len(hl_vec), hl_size):
@@ -52,72 +48,50 @@ def init_data_buckets(n):
             for i in range(n)}
 
 
-def _bucketize_and_split_data(headlines, text, buckets, enc_dict, dec_dict):
-    train = init_data_buckets(len(buckets))
-    dev = init_data_buckets(len(buckets))
-    test = init_data_buckets(len(buckets))
+def _bucketize_data(headlines, text, buckets, enc_dict, dec_dict):
     data_by_bucket = init_data_buckets(len(buckets))
-    dev_headlines = []
-    test_headlines = []
     for i in range(len(headlines)):
         hl = headlines[i]
         txt = text[i]
         size = (len(txt.split()), len(hl.split()))
         bucket_index = _get_bucket(size, buckets)
-        data_by_bucket[bucket_index]['enc_input'].append(txt)
-        data_by_bucket[bucket_index]['dec_input'].append(hl)
+        hl_vec, txt_vec, mask = _one_hot_and_mask_data(hl, txt,
+                                                       buckets[bucket_index],
+                                                       enc_dict, dec_dict)
+        data_by_bucket[bucket_index]['enc_input'].append(txt_vec)
+        data_by_bucket[bucket_index]['dec_input'].append(hl_vec)
+        data_by_bucket[bucket_index]['dec_mask'].append(mask)
 
-    for key in data_by_bucket:
-        bucket = data_by_bucket[key]
-        num_samples = len(bucket['enc_input'])
-        split_data_indices = np.random.permutation(np.arange(num_samples))
-        for i in range(len(split_data_indices)):
-            data_index = split_data_indices[i]
-            txt = bucket['enc_input'][data_index]
-            hl = bucket['dec_input'][data_index]
-            hl_vec, txt_vec, mask = _one_hot_and_mask_data(hl, txt,
-                                                           buckets[key],
-                                                           enc_dict, dec_dict)
-            if i < num_samples * 8 / 10:
-                train[key]['enc_input'].append(txt_vec)
-                train[key]['dec_input'].append(hl_vec)
-                train[key]['dec_masks'].append(mask)
-            elif i % 2 == 0:
-                dev[key]['enc_input'].append(txt_vec)
-                dev[key]['dec_input'].append(hl_vec)
-                dev[key]['dec_masks'].append(mask)
-                dev_headlines.append(hl)
-            else:
-                test[key]['enc_input'].append(txt_vec)
-                test[key]['dec_input'].append(hl_vec)
-                test[key]['dec_masks'].append(mask)
-                test_headlines.append(hl)
-
-    return train, dev, test, dev_headlines, test_headlines
+    return data_by_bucket
 
 
-def split_data(data_path, buckets):
+def load_one_set(data_path, name, buckets, enc_dict, dec_dict):
     headlines = []
     text = []
-
-    headline_path = os.path.join(data_path, 'headlines')
-    text_path = os.path.join(data_path, 'texts')
+    headline_path = os.path.join(data_path, name+'/headlines')
+    text_path = os.path.join(data_path, name+'/texts')
     for filename in os.listdir(headline_path):
         headlines += _read_and_split_file(os.path.join(headline_path,
                                                        filename))
     for filename in os.listdir(text_path):
         text += _read_and_split_file(os.path.join(text_path, filename))
 
+    return _bucketize_data(headlines, text, buckets, enc_dict, dec_dict)
+
+
+def load_data(data_path, buckets):
     enc_vocab = _read_and_split_file(os.path.join(data_path, 'enc_vocab.txt'))
     dec_vocab = _read_and_split_file(os.path.join(data_path, 'dec_vocab.txt'))
     enc_dict = {enc_vocab[i]: i for i in range(len(enc_vocab))}
     dec_dict = {dec_vocab[i]: i for i in range(len(dec_vocab))}
-    train, dev, test, dev_headlines, test_headlines = \
-        _bucketize_and_split_data(headlines, text, buckets,
-                                  enc_dict, dec_dict)
-    num_samples = len(headlines) * 8 / 10
+    train = load_one_set(data_path, 'train', buckets, enc_dict, dec_dict)
+    dev = load_one_set(data_path, 'dev', buckets, enc_dict, dec_dict)
+    test = load_one_set(data_path, 'test', buckets, enc_dict, dec_dict)
+    num_samples = sum([len(train[i]['dec_input']) for i in len(buckets)])
+    dev_headlines_path = os.path.join(data_path, 'dev/headlines')
+    test_headlines_path = os.path.join(data_path, 'test/headlines')
     return train, dev, test, enc_dict, dec_dict, num_samples, \
-        dev_headlines, test_headlines
+        dev_headlines_path, test_headlines_path
 
 
 def make_dir(path):

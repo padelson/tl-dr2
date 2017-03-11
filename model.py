@@ -31,34 +31,20 @@ class Summarizer(object):
         return " ".join([tf.compat.as_str(self.inv_dec_dict[output])
                          for output in outputs])
 
-    def _save_gt_headlines(self, set_name, headlines):
-        dir_path = os.path.join(self.sess_dir, set_name + '_headlines')
-        if set_name == 'dev':
-            self.dev_headlines_path = dir_path
-        elif set_name == 'test':
-            self.test_headlines_path = dir_path
-        data.make_dir(dir_path)
-        for i, hl in enumerate(headlines):
-            filepath = os.path.join(dir_path, str(i) + '.txt')
-            with open(filepath, 'w') as f:
-                f.write(hl + '\n')
-
     def _setup_data(self):
         print 'Setting up data...',
         start = time.time()
         with open(os.path.join(self.sess_dir, 'data_path'), 'w') as f:
             f.write(self.data_path)
-        meta_data = data.split_data(self.data_path, config.BUCKETS)
+        meta_data = data.load_data(self.data_path, config.BUCKETS)
         self.train_data = meta_data[0]
         self.dev_data = meta_data[1]
         self.test_data = meta_data[2]
         self.enc_dict = meta_data[3]
         self.dec_dict = meta_data[4]
         self.num_train_points = meta_data[5]
-        self.dev_headlines = meta_data[6]
-        self.test_headlines = meta_data[7]
-        self._save_gt_headlines('dev', self.dev_headlines)
-        self._save_gt_headlines('test', self.test_headlines)
+        self.dev_headlines_path = meta_data[6]
+        self.test_headlines_path = meta_data[7]
         self.inv_dec_dict = {v: k for k, v in self.dec_dict.iteritems()}
         self.enc_vocab = len(self.enc_dict)
         self.dec_vocab = len(self.dec_dict)

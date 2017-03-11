@@ -87,7 +87,8 @@ def load_data(data_path, buckets):
     train = load_one_set(data_path, 'train', buckets, enc_dict, dec_dict)
     dev = load_one_set(data_path, 'dev', buckets, enc_dict, dec_dict)
     test = load_one_set(data_path, 'test', buckets, enc_dict, dec_dict)
-    num_samples = sum([len(train[i]['dec_input']) for i in len(buckets)])
+    num_samples = sum([len(train[i]['dec_input'])
+                       for i in range(len(buckets))])
     dev_headlines_path = os.path.join(data_path, 'dev/headlines')
     test_headlines_path = os.path.join(data_path, 'test/headlines')
     return train, dev, test, enc_dict, dec_dict, num_samples, \

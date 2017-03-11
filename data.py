@@ -118,7 +118,7 @@ def get_batch(data_buckets, bucket_index, buckets, batch_size, iteration=0):
     next_bucket = False
     start_i = iteration * batch_size
     end_i = (iteration + 1) * batch_size
-    if end_i > len(bucket['enc_input']):
+    if end_i >= len(bucket['enc_input']):
         next_bucket = True
         start_i = -batch_size
         end_i = None

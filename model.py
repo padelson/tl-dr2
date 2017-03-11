@@ -292,7 +292,8 @@ class Summarizer(object):
                         bucket_index += 1
                     total_loss += step_loss
                     if bucket_index >= len(config.BUCKETS) or \
-                       iteration == 20 or iteration % 1000 == 0:
+                       iteration == 20 or \
+                       (iteration > 0 and iteration % 1000 == 0):
                         saver.save(sess, os.path.join(self.checkpoint_path,
                                                       'summarizer'),
                                    global_step=iteration)

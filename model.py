@@ -189,7 +189,6 @@ class Summarizer(object):
     def run_step(self, sess, encoder_inputs, decoder_inputs, decoder_masks,
                  bucket_id, update_params):
         encoder_size, decoder_size = config.BUCKETS[bucket_id]
-        start = time.time()
         input_feed = {}
         for step in xrange(encoder_size):
             input_feed[self.encoder_inputs[step].name] = encoder_inputs[step]
@@ -214,36 +213,50 @@ class Summarizer(object):
         else:
             return None, outputs[0], outputs[1:]  # No grad norm, loss, outputs
 
-    def evaluate(self, sess, iteration, test=False):
+    def evaluate(self, sess, train_loss, iteration, test=False):
         bucket_losses = []
         summaries = []
+        eval_iter = 0
+        print 'Total train loss', train_loss
         for bucket_index in xrange(len(config.BUCKETS)):
             if len(self.test_data[bucket_index]) == 0:
                 print 'Test: empty bucket', bucket_index
                 continue
-            eval_data = self.test_data if test else self.dev_data
-            batch_data = data.get_batch(eval_data, bucket_index,
-                                        config.BUCKETS, config.BATCH_SIZE)
-            encoder_inputs = batch_data[0]
-            decoder_inputs = batch_data[1]
-            decoder_masks = batch_data[2]
-            _, step_loss, output_logits = self.run_step(sess, encoder_inputs,
-                                                        decoder_inputs,
-                                                        decoder_masks,
-                                                        bucket_index, False)
-            loss_text = 'Test bucket:', bucket_index, 'Loss:', step_loss
+            bucket_loss = 0
+            while True:
+                eval_data = self.test_data if test else self.dev_data
+                batch_data = data.get_batch(eval_data, bucket_index,
+                                            config.BUCKETS, config.BATCH_SIZE,
+                                            eval_iter)
+                encoder_inputs = batch_data[0]
+                decoder_inputs = batch_data[1]
+                decoder_masks = batch_data[2]
+                done = batch_data[3]
+                _, step_loss, output_logits = self.run_step(sess,
+                                                            encoder_inputs,
+                                                            decoder_inputs,
+                                                            decoder_masks,
+                                                            bucket_index,
+                                                            False)
+                bucket_loss += step_loss
+
+                output_logits = np.array(output_logits)
+                for i in xrange(config.BATCH_SIZE):
+                    summaries.append(self._construct_seq(
+                                     output_logits[:, i, :]))
+                if done:
+                    break
+            loss_text = 'Test bucket:', bucket_index, 'Loss:', bucket_loss
             print loss_text
             bucket_losses.append(loss_text)
-            output_logits = np.array(output_logits)
-            for i in xrange(config.BATCH_SIZE):
-                summaries.append(self._construct_seq(output_logits[:, i, :]))
         path = os.path.join(self.results_path,
                             'iter_' + str(iteration))
         if test:
             path += '_test'
         data.make_dir(path)
         gt_path = self.test_headlines_path if test else self.dev_headlines_path
-        utils.write_results(summaries, bucket_losses, path, gt_path)
+        utils.write_results(summaries, train_loss, bucket_losses,
+                            path, gt_path)
         print 'Wrote results to', path
 
     def train(self):
@@ -282,13 +295,13 @@ class Summarizer(object):
                         saver.save(sess, os.path.join(self.checkpoint_path,
                                                       'summarizer'),
                                    global_step=iteration)
-                        self.evaluate(sess, iteration)
+                        self.evaluate(sess, total_loss, iteration)
                     iteration += 1
                     prog.update(iteration % (target+1),
                                 [("train loss", step_loss)])
                     if bucket_index >= len(config.BUCKETS):
                         break
-            self.evaluate(sess, iteration, test=True)
+            self.evaluate(sess, total_loss, iteration, test=True)
 
     def summarize(self, inputs):
         saver = tf.train.Saver()

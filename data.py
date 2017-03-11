@@ -60,7 +60,7 @@ def _bucketize_data(headlines, text, buckets, enc_dict, dec_dict):
                                                        enc_dict, dec_dict)
         data_by_bucket[bucket_index]['enc_input'].append(txt_vec)
         data_by_bucket[bucket_index]['dec_input'].append(hl_vec)
-        data_by_bucket[bucket_index]['dec_mask'].append(mask)
+        data_by_bucket[bucket_index]['dec_masks'].append(mask)
 
     return data_by_bucket
 

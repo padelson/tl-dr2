@@ -304,10 +304,11 @@ class Summarizer(object):
                                    global_step=iteration)
                         self.evaluate(sess, total_loss, iteration)
                     iteration += 1
-                    prog.update(get_step_iter(iteration, target),
-                                [("train loss", step_loss)])
                     if bucket_index >= len(config.BUCKETS):
                         break
+                    prog.update(get_step_iter(iteration, target),
+                                [("train loss", step_loss)])
+
             self.evaluate(sess, total_loss, iteration, test=True)
 
     def summarize(self, inputs):

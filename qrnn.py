@@ -14,7 +14,6 @@ class QRNN(object):
         self.conv_size = conv_size
         self.num_convs = num_convs
         self.initializer = None
-        pass
 
     def seq2seq_f(self, encoder_inputs, decoder_inputs,
                   output_projection=None, training=False):
@@ -56,8 +55,18 @@ class QRNN(object):
             H.append(tf.mul(F[i], H[i-1]) + tf.mul(1-F[i]))
         return H
 
-    def conv_layer(self, layer_id):
-        pass
+    def conv_layer(self, layer_id, inputs):
+        with tf.variable_scope("QRNN/Variable/Convolution/"+str(layer_id)):
+            self.conv_filter = tf.get_variable("conv_filter", \
+                [self.conv_size, self.num_encoder_symbols, self.embedding_size * 3], initializer=initializer)
+
+            # !! inputs is batch_size x sentence_length x word_length(=channel) !!
+            _weighted = tf.nn.conv1d(inputs, self.conv_filter, stride=1, padding="SAME", data_format="NHWC")
+
+            # _weighted is batch_size x conved_size x output_channel
+            _w = tf.transpose(_weighted, [1, 0, 2])  # conved_size x  batch_size x output_channel
+            _ws = tf.split(2, 3, _w) # make 3(f, z, o) conved_size x  batch_size x size
+            return _ws
 
     def linear_layer(self, layer_id, inputs):
         with tf.variable_scope('QRNN/Linear/'+str(layer_id)):
@@ -70,7 +79,7 @@ class QRNN(object):
             return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
 
     def conv_with_encode_output(self, layer_id):
-        pass
+        raise NotImplementedError
 
     def linear_with_encode_output(self, layer_id, inputs=None, h_t):
         with tf.variable_scope('QRNN/Linear_with_encode/'+str(layer_id)):

@@ -23,7 +23,8 @@ class QRNN(object):
         encode_outputs = []
         for i in range(self.encode_layers):
             inputs = encoder_inputs if i == 0 else encode_outputs[-1]
-            encode_outputs.append(self.conv_layer(inputs))
+            encode_outputs.append(self.conv_layer(i, inputs))
+
         decode_outputs = []
         for i in range(self.decode_layers):
             enc_out = encode_outputs[i][-1]
@@ -32,10 +33,13 @@ class QRNN(object):
                 decode_inputs = None
             is_last_layer = i == self.decode_layers - 1
             if not last_layer:
-                decode_outputs.append(self.conv_with_encode_output(decoder_inputs,
-                                                                   enc_out))
+                decode_outputs.append(self.conv_with_encode_output(
+                                      i,
+                                      decoder_inputs,
+                                      enc_out))
             else:
-                last_state = self.conv_with_attention()
+                last_state = self.conv_with_attention(encode_outputs,
+                                                      decode_outputs)
         return self.transform_output(last_state)
 
     def fo_pool(self, Z, F, O):
@@ -91,11 +95,12 @@ class QRNN(object):
             W_c = tf.get_variable('W_c', [], initializer=self.initializer)
             b_o = tf.get_variable('b_o', [], initializer=self.initializer)
 
+            # do normal conv with encode_output
             Z, F, O = None
             Z = tf.tanh(Z)
             F = tf.sigmoid(F)
             O = tf.sigmoid(O)
-            # do normal conv with encode_output
+
             C = []
             H = []
             enc_final_state = encode_outputs[-1]
@@ -114,6 +119,7 @@ class QRNN(object):
 
     def transform_output(self, inputs):
         with tf.variable_scope('QRNN/Transform_output'):
+            # TODO shapes
             W = tf.get_variable('W', [], initializer=self.initializer)
             b = tf.get_variable('b', [], initializer=self.initializer)
         return tf.add(tf.matmul(inputs, W), b)

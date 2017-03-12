@@ -41,7 +41,7 @@ def grabContents(f, tag):
     while line != "</%s>\n" % tag:
         contents += line.replace('\n', ' ')
         line = readline(f)
-    return contents
+    return contents.split()
 
 # assuming you have an open readable file...
 # read the <TEXT> until </TEXT>
@@ -53,7 +53,7 @@ def getFirstSentence(f):
     # second = grabContents(f, "P")
     # if second is not None:
     #     text += ' ' + second
-    return text.split(' ')
+    return text
 
 def getHeadline(f):
     headline = grabContents(f, "HEADLINE")

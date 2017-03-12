@@ -3,16 +3,20 @@ import tensorflow as tf
 
 
 class QRNN(object):
-    def __init__(self, num_encoder_symbols, num_decoder_symbols,
-                 embedding_size, num_layers, conv_size, num_convs):
-        # TODO assign args
+    def __init__(self, num_encoder_symbols, num_decoder_symbols, batch_size,
+                 embedding_size, enc_input_size, dec_input_size,
+                 num_layers, conv_size, num_convs):
         self.num_encoder_symbols = num_encoder_symbols
         self.num_decoder_symbols = num_decoder_symbols
+        self.batch_size = batch_size
         self.embedding_size = embedding_size
+        self.enc_input_size = enc_input_size
+        self.dec_input_size = dec_input_size
         self.encode_layers = num_layers
         self.decode_layers = num_layers
         self.conv_size = conv_size
         self.num_convs = num_convs
+        self.filter_shape = [conv_size, embedding_size, 1, num_convs*3]
         self.initializer = None
 
     def seq2seq_f(self, encoder_inputs, decoder_inputs,
@@ -57,16 +61,21 @@ class QRNN(object):
 
     def conv_layer(self, layer_id, inputs):
         with tf.variable_scope("QRNN/Variable/Convolution/"+str(layer_id)):
-            self.conv_filter = tf.get_variable("conv_filter", \
-                [self.conv_size, self.num_encoder_symbols, self.embedding_size * 3], initializer=initializer)
-
-            # !! inputs is batch_size x sentence_length x word_length(=channel) !!
-            _weighted = tf.nn.conv1d(inputs, self.conv_filter, stride=1, padding="SAME", data_format="NHWC")
-
-            # _weighted is batch_size x conved_size x output_channel
-            _w = tf.transpose(_weighted, [1, 0, 2])  # conved_size x  batch_size x output_channel
-            _ws = tf.split(2, 3, _w) # make 3(f, z, o) conved_size x  batch_size x size
-            return _ws
+            W = tf.get_variable('W', self.filter_shape,
+                                initializer=self.initializer)
+            num_pads = self.conv_size - 1
+            padded_input = tf.pad(tf.expand_dims(inputs, -1),
+                                  [[0, 0], [num_pads, 0],
+                                   [0, 0], [0, 0]],
+                                  "CONSTANT")
+            conv = tf.nn.conv2d(
+                padded_input,
+                W,
+                strides=[1, 1, 1, 1],
+                padding="VALID",
+                name="conv")
+            # split conv into Z, F, and O
+            return
 
     def linear_layer(self, layer_id, inputs):
         with tf.variable_scope('QRNN/Linear/'+str(layer_id)):
@@ -120,7 +129,8 @@ class QRNN(object):
                     C.append(tf.mul(F[i], C[i-1]) + tf.mul(1-F[i], Z[i]))
                 # TODO transpose one?
                 # TODO make this more efficient
-                alpha = tf.nn.softmax(tf.matmul(C[i], enc_final_state))
+                alpha = tf.nn.softmax(tf.matmul(C[i], enc_final_state,
+                                                transpose_b=True))
                 k_t = np.sum(tf.matmul(alpha, enc_final_state))
                 _weights = tf.add(tf.matmul(k_t, Wk), tf.matmul(C[i], W_c))
                 H.append(tf.mul(O[i], tf.add(_weights, b)))

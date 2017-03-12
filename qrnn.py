@@ -28,7 +28,8 @@ class QRNN(object):
                                             decode_outputs[-1])
         return self.transform_output(last_hidden)
 
-    def fo_pool(Z, F, O):
+    def fo_pool(Z, F, O, C_prev, H_prev):
+        C = tf.mul(F,)
         pass
 
     def f_pool(Z, F):

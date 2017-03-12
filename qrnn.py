@@ -30,11 +30,13 @@ class QRNN(object):
             # TODO what do you feed in during decode lol
             if not training:
                 decode_inputs = None
-            decode_outputs.append(self.conv_with_encode_output(decoder_inputs,
-                                                               enc_out))
-        last_hidden = self.attention_output(encode_outputs[-1],
-                                            decode_outputs[-1])
-        return self.transform_output(last_hidden)
+            is_last_layer = i == self.decode_layers - 1
+            if not last_layer:
+                decode_outputs.append(self.conv_with_encode_output(decoder_inputs,
+                                                                   enc_out))
+            else:
+                last_state = self.conv_with_attention()
+        return self.transform_output(last_state)
 
     def fo_pool(self, Z, F, O):
         H = [np.zeros(Z[0].shape)]
@@ -80,8 +82,38 @@ class QRNN(object):
             Z, F, O = tf.split(1, 3, _weighted)
             return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
 
-    def attention_output(self):
-        pass
+    def conv_with_attention(self, encode_outputs, decode_outputs):
+        with tf.variable_scope('QRNN/Conv_with_attention/'):
+            # TODO shape
+            W_conv = tf.get_variable('W', [], initializer=self.initializer)
+            # TODO get conv variables
+            W_k = tf.get_variable('W_k', [], initializer=self.initializer)
+            W_c = tf.get_variable('W_c', [], initializer=self.initializer)
+            b_o = tf.get_variable('b_o', [], initializer=self.initializer)
 
-    def transform_output(self):
-        pass
+            Z, F, O = None
+            Z = tf.tanh(Z)
+            F = tf.sigmoid(F)
+            O = tf.sigmoid(O)
+            # do normal conv with encode_output
+            C = []
+            H = []
+            enc_final_state = encode_outputs[-1]
+            for i in range(self.num_convs):
+                if i == 0:
+                    C.append(np.zeros(Z[0].shape))
+                else:
+                    C.append(tf.mul(F[i], C[i-1]) + tf.mul(1-F[i], Z[i]))
+                # TODO transpose one?
+                # TODO make this more efficient
+                alpha = tf.nn.softmax(tf.matmul(C[i], enc_final_state))
+                k_t = np.sum(tf.matmul(alpha, enc_final_state))
+                _weights = tf.add(tf.matmul(k_t, Wk), tf.matmul(C[i], W_c))
+                H.append(tf.mul(O[i], tf.add(_weights, b)))
+            return H
+
+    def transform_output(self, inputs):
+        with tf.variable_scope('QRNN/Transform_output'):
+            W = tf.get_variable('W', [], initializer=self.initializer)
+            b = tf.get_variable('b', [], initializer=self.initializer)
+        return tf.add(tf.matmul(inputs, W), b)

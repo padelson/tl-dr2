@@ -63,7 +63,11 @@ class QRNN(object):
         with tf.variable_scope("QRNN/Variable/Convolution/"+str(layer_id)):
             W = tf.get_variable('W', self.filter_shape,
                                 initializer=self.initializer)
+            b = tf.get_variable('b', [num_filters],
+                                initializer=self.initializer)
             num_pads = self.conv_size - 1
+            # input dims ~should~ now be [batch_size, sequence_length,
+            #                             embedding_size, 1]
             padded_input = tf.pad(tf.expand_dims(inputs, -1),
                                   [[0, 0], [num_pads, 0],
                                    [0, 0], [0, 0]],
@@ -73,9 +77,13 @@ class QRNN(object):
                 W,
                 strides=[1, 1, 1, 1],
                 padding="VALID",
-                name="conv")
-            # split conv into Z, F, and O
-            return
+                name="conv") + b
+            # conv dims: [batch_size, sequence_length,
+            #             embedding_size, num_convs*3]
+            # so split 4th dim into 3
+            # split conv into Z, F, and O, each now size num_convs in 4th D
+            Z, F, O = tf.split(3, 3, conv)
+            return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
 
     def linear_layer(self, layer_id, inputs):
         with tf.variable_scope('QRNN/Linear/'+str(layer_id)):

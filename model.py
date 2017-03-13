@@ -51,8 +51,8 @@ class Summarizer(object):
         print 'Setting up data took', time.time() - start, 'seconds'
         print 'Encoder vocab size:', len(self.enc_dict)
         print 'Encoder vocab size:', len(self.dec_dict)
-        print 'Number of training samples', [len(x['dec_input'])
-                                             for x in self.train_data]
+        print 'Number of training samples', [len(x['dec_input']) for i, x in
+                                             self.train_data.iteritems()]
 
     def _setup_sess_dir(self):
         print 'Setting up directory for session'

@@ -235,4 +235,7 @@ class QRNN(object):
             else:
                 last_state = self.conv_with_attention(encode_outputs,
                                                       decoder_inputs)
-        return self.transform_output(last_state)
+        if output_projection is not None:
+            return last_state
+        else:
+            return self.transform_output(last_state)

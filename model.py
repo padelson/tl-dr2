@@ -19,16 +19,7 @@ class Summarizer(object):
         # TODO output projection
         return qrnn.seq2seq_f(encoder_inputs, decoder_inputs,
                               output_projection=self.output_projection,
-                              training=not do_decode)
-        return tf.nn.seq2seq.embedding_attention_seq2seq(
-            encoder_inputs,
-            decoder_inputs,
-            self.cell,
-            num_encoder_symbols=self.enc_vocab,
-            num_decoder_symbols=self.dec_vocab,
-            embedding_size=config.HIDDEN_SIZE,
-            output_projection=self.output_projection,
-            feed_previous=do_decode)
+                              training=do_decode)
 
     def _construct_seq(self, output_logits):
         output_logits = np.array(output_logits)

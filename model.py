@@ -270,7 +270,7 @@ class Summarizer(object):
 
     def train(self):
 
-        def get_step_iter(iteration, target):
+        def get_epoch_iter(iteration, target):
             step_iter = iteration % target
             return target if iteration > 0 and step_iter == 0 else step_iter
         saver = tf.train.Saver()
@@ -314,7 +314,7 @@ class Summarizer(object):
                         saver.save(sess, os.path.join(self.checkpoint_path,
                                                       'summarizer'),
                                    global_step=iteration)
-                        if iteration % 500 == 0:
+                        if iteration == 21 or iteration % 500 == 0:
                             self.evaluate(sess, total_loss, iteration)
                     iteration += 1
                     if bucket_index >= len(config.BUCKETS):
@@ -323,7 +323,7 @@ class Summarizer(object):
                         break
                     step_iter = sess.run(tf.assign(self.bucket_step,
                                                    step_iter+1))
-                    prog.update(step_iter,
+                    prog.update(get_epoch_iter(iteration, target),
                                 [("train loss", step_loss)])
 
             self.evaluate(sess, total_loss, iteration, test=True)

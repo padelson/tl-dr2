@@ -100,7 +100,7 @@ class QRNN(object):
             Z, F, O = tf.split(1, 3, result)
             return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
 
-    def conv_with_encode_output(self, layer_id, inputs=None, h_t):
+    def conv_with_encode_output(self, layer_id, h_t, inputs=None):
         with tf.variable_scope("QRNN/Variable/Conv_w_enc_out/"+str(layer_id)):
             v_shape = (self.num_convs, self.num_convs*3)
             if inputs is not None:
@@ -262,8 +262,8 @@ class QRNN(object):
             if not last_layer:
                 decode_outputs.append(self.conv_with_encode_output(
                                       i,
-                                      decoder_inputs,
-                                      enc_out))
+                                      enc_out,
+                                      decoder_inputs))
             else:
                 last_state = self.conv_with_attention(encode_outputs,
                                                       decoder_inputs)

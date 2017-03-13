@@ -180,6 +180,7 @@ def find_dist():
     directories = ('train', 'dev', 'test')
     for d in directories:
         path = '/datadrive/gigaword_parsed/%s/headlines/' % d
+        print path
         for filename in os.listdir(path):
             h = open(path+filename, 'r')
             t = open('/datadrive/gigaword_parsed/%s/texts/%s' % (d, filename), 'r')

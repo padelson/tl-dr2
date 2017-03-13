@@ -181,11 +181,13 @@ def find_dist():
 
             for headline in h:
                 text = t.readline()
-                print headline, text
+                dist[bucketize(headline, text)] += 1
 
-                h.close()
-                t.close()
-                assert False
+            h.close()
+            t.close()
+        write(out, dist)
+        out.close()
+        assert False
 
     """
     for i in range(1,4):

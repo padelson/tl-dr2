@@ -45,7 +45,7 @@ class QRNN(object):
         return np.array(H)
 
     def _get_filter_shape(self, inputs):
-        return [self.conv_size, tf.shape(inputs)[2], 1, self.num_convs*3]
+        return tf.pack([[self.conv_size], tf.shape(inputs)[2], [1, self.num_convs*3]])
         return tf.pack([self.conv_size, tf.shape(inputs)[2], 1, self.num_convs*3])
 
     # convolution dimension results maths

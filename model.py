@@ -201,7 +201,7 @@ class Summarizer(object):
             input_feed[self.decoder_masks[step].name] = decoder_masks[step]
         last_target = self.decoder_inputs[decoder_size].name
         input_feed[last_target] = np.zeros([config.BATCH_SIZE], dtype=np.int32)
-        input_feed[self.training_placeholder] = update_params
+        input_feed[self.training_placeholder] = not update_params
         input_feed[self.bucket_placeholder] = config.BUCKETS[bucket_id]
         # output feed: depends on whether we do a backward step or not.
         if update_params:

@@ -46,7 +46,6 @@ class QRNN(object):
 
     def _get_filter_shape(self, inputs):
         return tf.pack([self.conv_size, tf.shape(inputs)[2], 1, self.num_convs*3])
-        return tf.pack([self.conv_size, tf.shape(inputs)[2], 1, self.num_convs*3])
 
     # convolution dimension results maths
     # out_height = ceil(float(in_height - filter_height + 1) /
@@ -248,7 +247,7 @@ class QRNN(object):
                   output_projection=None, training=False):
         # TODO what do i do about output_projection
         encode_outputs = []
-        embedded_inputs = self.get_embeddings(encoder_inputs)
+        embedded_inputs = np.array(self.get_embeddings(encoder_inputs))
         encoder_inputs = np.array(encoder_inputs)
         decoder_inputs = np.array(decoder_inputs)
         for i in range(self.encode_layers):

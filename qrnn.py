@@ -25,11 +25,11 @@ class QRNN(object):
                                 initializer=self.initializer)
             return tf.nn.embedding_lookup(W, word_ids)
 
-    def fo_pool(self, Z, F, O, sequence_length):
+    def fo_pool(self, Z, F, O):
         # Z, F, O dims: [batch_size, sequence_length, num_convs]
         H = tf.fill(tf.shape(Z), 0.0)
         C = tf.fill(tf.shape(Z), 0.0)
-        for i in range(1, sequence_length):
+        for i in range(1, tf.shape(Z)[1]):
             C[:, i, :] = tf.mul(F[:, i, :], C[:, i-1, :]) + \
                          tf.mul(1-F[:, i, :], Z[:, i, :])
             H[:, i, :] = tf.mul(O[:, i, :], C[:, i, :])
@@ -38,8 +38,8 @@ class QRNN(object):
 
     def f_pool(self, Z, F, sequence_length):
         # Z, F dims: [batch_size, sequence_length, num_convs]
-        H = H = np.zeros(tf.shape(Z))
-        for i in range(1, sequence_length):
+        H = tf.fill(tf.shape(Z), 0)
+        for i in range(1, tf.shape(Z)[1]):
             H[:, i, :] = tf.mul(F[:, i, :], H[:, i-1, :]) + \
                          tf.mul(1-F[:, i, :])
         return np.array(H)
@@ -82,7 +82,7 @@ class QRNN(object):
             # squeeze out 3rd D
             # split 4th (now 3rd) dim into 3
             Z, F, O = tf.split(2, 3, tf.squeeze(conv))
-            return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O), sequence_length)
+            return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
 
     def linear_layer(self, layer_id, inputs):
         # input dim [batch, seq_len, num_convs or embedding_size]
@@ -256,8 +256,8 @@ class QRNN(object):
         for i in range(self.encode_layers):
             inputs = embedded_inputs if i == 0 else encode_outputs[-1]
             input_shape = self.embedding_size if i == 0 else self.num_convs
-            seq_len = self.enc_input_size
-            encode_outputs.append(self.conv_layer(i, inputs, input_shape, seq_len))
+            encode_outputs.append(self.conv_layer(i, inputs, input_shape))
+
         decode_outputs = []
         for i in range(self.decode_layers):
             # list index i of dim [batch, seq_len, state_size]

@@ -103,9 +103,11 @@ def process(dirname=".", filename="example_data", file_num=0):
     f.close()
 
 def ostest():
+    print 'ostest'
     file_num = 0
     for i in range(1,4):
         path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
+        print path
         for dirname,_,filenames in os.walk(path):
             for filename in filenames:
                 process(dirname, filename, file_num)
@@ -127,6 +129,7 @@ def write(f, d):
         f.write('%d\n' % elem[1])
 
 def build_vocab():
+    print 'build_vocab'
     vocab = collections.defaultdict(int)
     dist = collections.defaultdict(int)
     enc = open('/datadrive/gigaword_parsed/enc_vocab.txt', 'w')

@@ -45,7 +45,7 @@ class QRNN(object):
         return np.array(H)
 
     def _get_filter_shape(self, inputs):
-        return [self.conv_size, tf.shape(inputs)[2], 1, self.num_convs*3]
+        return [self.conv_size, 1, 1, self.num_convs*3]
 
     # convolution dimension results maths
     # out_height = ceil(float(in_height - filter_height + 1) /
@@ -59,7 +59,7 @@ class QRNN(object):
 
     def conv_layer(self, layer_id, inputs):
         with tf.variable_scope("QRNN/Variable/Convolution/"+str(layer_id)):
-            filter_shape = tf.shape(self._get_filter_shape(inputs))
+            filter_shape = self._get_filter_shape(inputs)
             W = tf.get_variable('W', filter_shape,
                                 initializer=self.initializer)
             b = tf.get_variable('b', [self.num_convs*3],

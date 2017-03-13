@@ -165,7 +165,12 @@ def build_vocab():
 def bucketize(headline, text):
     hl_len = len(headline.split())
     t_len = len(text.split())
-    return (hl_len, t_len)
+    if t_len < 15:
+        return 'b1'
+    elif t_len < 30:
+        return 'b2'
+    else:
+        return 'b3'
 
 def find_dist():
     dist = collections.defaultdict(int)
@@ -185,9 +190,8 @@ def find_dist():
 
             h.close()
             t.close()
-        write(out, dist)
-        out.close()
-        assert False
+    write(out, dist)
+    out.close()
 
     """
     for i in range(1,4):

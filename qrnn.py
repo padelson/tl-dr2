@@ -44,8 +44,8 @@ class QRNN(object):
                          tf.mul(1-F[:, i, :])
         return np.array(H)
 
-    def _get_filter_shape(self, inputs):
-        return [self.conv_size, 1, 1, self.num_convs*3]
+    def _get_filter_shape(self, input_shape):
+        return [self.conv_size, input_shape, 1, self.num_convs*3]
 
     # convolution dimension results maths
     # out_height = ceil(float(in_height - filter_height + 1) /
@@ -57,9 +57,9 @@ class QRNN(object):
     # in_width = embedding_size
     # filter_width = embedding_size
 
-    def conv_layer(self, layer_id, inputs):
+    def conv_layer(self, layer_id, inputs, input_shape):
         with tf.variable_scope("QRNN/Variable/Convolution/"+str(layer_id)):
-            filter_shape = self._get_filter_shape(inputs)
+            filter_shape = self._get_filter_shape(input_shape)
             W = tf.get_variable('W', filter_shape,
                                 initializer=self.initializer)
             b = tf.get_variable('b', [self.num_convs*3],
@@ -255,7 +255,8 @@ class QRNN(object):
 
         for i in range(self.encode_layers):
             inputs = embedded_inputs if i == 0 else encode_outputs[-1]
-            encode_outputs.append(self.conv_layer(i, inputs))
+            input_shape = self.embedding_size if i == 0 else self.num_convs
+            encode_outputs.append(self.conv_layer(i, inputs, input_shape))
         decode_outputs = []
         for i in range(self.decode_layers):
             # list index i of dim [batch, seq_len, state_size]

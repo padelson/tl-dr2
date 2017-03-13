@@ -23,7 +23,7 @@ class QRNN(object):
             W = tf.get_variable('W', [self.num_encoder_symbols,
                                       self.embedding_size],
                                 initializer=self.initializer)
-            return tf.nn.embedding_lookup(W, word_ids)
+            return tf.nn.embedding_lookup([W], word_ids)
 
     def fo_pool(self, Z, F, O):
         # Z, F, O dims: [batch_size, sequence_length, num_convs]

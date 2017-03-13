@@ -162,10 +162,32 @@ def build_vocab():
     enc.close()
     dec.close()
 
+def find_dist():
+    dist = collections.defaultdict(int)
+    out = open('output.txt', 'w')
+    for i in range(3):
+        path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
+        for _,_,filenames in os.walk(path):
+            for filename in filenames:
+                h = open('/datadrive/headlines/'+filename, 'r')
+                t = open('/datadrive/texts/'+filename, 'r')
+
+                for headline in h:
+                    text = t.readline()
+                    print headline, text
+                    print len(headline.split()), len(text.split())
+                    h.close()
+                    t.close()
+                    assert False
+
+                h.close()
+                t.close()
+
 start_time = time.time()
 #test()
-makeDirs()
-ostest()
-build_vocab()
+#makeDirs()
+#ostest()
+#build_vocab()
+find_dist()
 #ostest()
 print 'time %f' % (time.time() - start_time)

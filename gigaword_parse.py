@@ -170,6 +170,24 @@ def bucketize(headline, text):
 def find_dist():
     dist = collections.defaultdict(int)
     out = open('output.txt', 'w')
+
+    # train, dev, test
+    directories = ('train', 'dev', 'test')
+    for d in directories:
+        path = '/datadrive/gigaword_parsed/%s/headlines/' % d
+        for filename in os.listdir(path):
+            h = open(path+filename, 'r')
+            t = open('/datadrive/gigaword_parsed/%s/texts/%s' % (d, filename), 'r')
+
+            for headline in h:
+                text = t.readline()
+                print headline, text
+
+                h.close()
+                t.close()
+                assert False
+
+    """
     for i in range(1,4):
         path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
         for _,_,filenames in os.walk(path):
@@ -187,6 +205,7 @@ def find_dist():
         write(out, dist)
         out.close()
         assert False
+    """
 
 start_time = time.time()
 #test()

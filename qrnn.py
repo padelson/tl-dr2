@@ -82,7 +82,7 @@ class QRNN(object):
             # squeeze out 3rd D
             # split 4th (now 3rd) dim into 3
             Z, F, O = tf.split(2, 3, tf.squeeze(conv))
-            return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
+            return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O), sequence_length)
 
     def linear_layer(self, layer_id, inputs):
         # input dim [batch, seq_len, num_convs or embedding_size]

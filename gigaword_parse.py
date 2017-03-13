@@ -135,7 +135,7 @@ def count_words(filename, vocab, dist):
 def write(f, d):
     arr = sorted(d.items(), key = lambda x: x[0])
     for i, elem in enumerate(arr):
-        f.write('%d,%d\t\t' % (elem[0][0], elem[0][1])
+        f.write('%d,%d\t\t' % (elem[0][0], elem[0][1]))
         f.write('%d\n' % elem[1])
 
 def build_vocab():
@@ -147,7 +147,7 @@ def build_vocab():
     enc.write('<pad>\n<unk>\n<s>\n<\s>\n')
     dec.write('<pad>\n<unk>\n<s>\n<\s>\n')
 
-    for i in range(3):
+    for i in range(1,4):
         path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
         for _,_,filenames in os.walk(path):
             for filename in filenames:
@@ -170,7 +170,7 @@ def bucketize(headline, text):
 def find_dist():
     dist = collections.defaultdict(int)
     out = open('output.txt', 'w')
-    for i in range(3):
+    for i in range(1,4):
         path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
         for _,_,filenames in os.walk(path):
             for filename in filenames:
@@ -179,7 +179,6 @@ def find_dist():
 
                 for headline in h:
                     text = t.readline()
-                    #print headline, text
                     #print len(headline.split()), len(text.split())
                     dist[bucketize(headline, text)] += 1
 

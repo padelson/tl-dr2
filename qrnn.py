@@ -25,32 +25,6 @@ class QRNN(object):
                                 initializer=self.initializer)
             return tf.nn.embedding_lookup(W, word_ids)
 
-    def seq2seq_f(self, encoder_inputs, decoder_inputs,
-                  output_projection=None, training=False):
-        # TODO what do i do about output_projection
-        encode_outputs = []
-        embedded_inputs = get_embeddings(encoder_inputs)
-        for i in range(self.encode_layers):
-            inputs = embedded_inputs if i == 0 else encode_outputs[-1]
-            encode_outputs.append(self.conv_layer(i, inputs))
-
-        decode_outputs = []
-        for i in range(self.decode_layers):
-            enc_out = encode_outputs[i][-1]
-            # TODO what do you feed in during decode lol
-            if not training:
-                decode_inputs = None
-            is_last_layer = i == self.decode_layers - 1
-            if not last_layer:
-                decode_outputs.append(self.conv_with_encode_output(
-                                      i,
-                                      decoder_inputs,
-                                      enc_out))
-            else:
-                last_state = self.conv_with_attention(encode_outputs,
-                                                      decode_outputs)
-        return self.transform_output(last_state)
-
     def fo_pool(self, Z, F, O):
         # Z, F, O dims: [batch_size, sequence_length, num_convs]
         H = np.zeros(Z.shape)
@@ -59,8 +33,8 @@ class QRNN(object):
             C[:, i, :] = tf.mul(F[:, i, :], C[:, i-1, :]) + \
                          tf.mul(1-F[:, i, :], Z[:, i, :])
             H[:, i, :] = tf.mul(O[:, i, :], C[:, i, :])
-        # i think we want output [batch, seq_len, num_convs, 1]
-        return tf.expand_dims(np.array(H), -1)
+        # i think we want output [batch, seq_len, num_convs]
+        return np.array(H)
 
     def f_pool(self, Z, F):
         # Z, F dims: [batch_size, sequence_length, num_convs]
@@ -68,7 +42,7 @@ class QRNN(object):
         for i in range(1, self.enc_input_size):
             H[:, i, :] = tf.mul(F[:, i, :], H[:, i-1, :]) + \
                          tf.mul(1-F[:, i, :])
-        return tf.expand_dims(np.array(H), -1)
+        return np.array(H)
 
     def _get_filter_shape(vec_size):
         return [self.conv_size, vec_size, 1, self.num_convs*3]
@@ -88,7 +62,7 @@ class QRNN(object):
             filter_shape = _get_filter_shape(inputs.shape[2])
             W = tf.get_variable('W', self.filter_shape,
                                 initializer=self.initializer)
-            b = tf.get_variable('b', [num_filters],
+            b = tf.get_variable('b', [self.num_convs*3],
                                 initializer=self.initializer)
             num_pads = self.conv_size - 1
             # input dims ~should~ now be [batch_size, sequence_length,
@@ -111,67 +85,154 @@ class QRNN(object):
             return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
 
     def linear_layer(self, layer_id, inputs):
+        # input dim [batch, seq_len, num_convs or embedding_size]
+        shape = (inputs.shape[2], self.num_convs*3)
         with tf.variable_scope('QRNN/Linear/'+str(layer_id)):
-            # TODO shape
-            W = tf.get_variable('W', [], initializer=self.initializer)
-            b = tf.get_variable('b', [], initializer=self.initializer)
-
-            _weighted = tf.add(tf.mul(inputs, W), b)
-            Z, F, O = tf.split(1, 3, _weighted)
+            W = tf.get_variable('W', shape,
+                                initializer=self.initializer)
+            b = tf.get_variable('b', [self.num_convs*3],
+                                initializer=self.initializer)
+            result = np.zeros([inputs.shape[:2]]+[self.num_convs*3])
+            # TODO do this efficiently
+            for i in range(inputs.shape[0]):
+                input_i = inputs[i, :, :]
+                result[i, :, :] = tf.nn.xw_plus_b(inputs_i, W, b)
+            Z, F, O = tf.split(1, 3, result)
             return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
 
     def conv_with_encode_output(self, layer_id):
         raise NotImplementedError
 
     def linear_with_encode_output(self, layer_id, inputs=None, h_t):
+        # input dim [batch, seq_len, num_convs or embedding_size]
+        # h_t dim [batch, 1, num_convs]
+        if inputs is not None:
+            w_shape = (inputs.shape[2], self.num_convs*3)
+        v_shape = (self.num_convs, self.num_convs*3)
         with tf.variable_scope('QRNN/Linear_with_encode/'+str(layer_id)):
-            # TODO shape
-            W = tf.get_variable('W', [], initializer=self.initializer)
-            V = tf.get_variable('V', [], initializer=self.initializer)
-            b = tf.get_variable('b', [], initializer=self.initializer)
+            if inputs is not None:
+                W = tf.get_variable('W', w_shape,
+                                    initializer=self.initializer)
+            V = tf.get_variable('V', v_shape,
+                                initializer=self.initializer)
+            b = tf.get_variable('b', [self.num_convs*3],
+                                initializer=self.initializer)
 
             _sum = tf.mul(h_t, V)
             if inputs is not None:
                 _sum = tf.add(_sum, tf.mul(inputs, W))
             _weighted = tf.add(_sum, b)
-            Z, F, O = tf.split(1, 3, _weighted)
+
+            result = np.zeros([inputs.shape[:2]]+[self.num_convs*3])
+            # TODO: do this efficiently
+            for i in range(inputs.shape[0]):
+                result_i = tf.matmul(h_t, V) + b
+                if inputs is not None:
+                    input_i = inputs[i, :, :]
+                    result_i += tf.matmul(input_i, W)
+                result[i, :, :] = result_i
+
+            Z, F, O = tf.split(1, 3, result)
             return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
 
-    def conv_with_attention(self, encode_outputs, decode_outputs):
+    def conv_with_attention(self, encode_outputs, inputs):
+        # input dim [batch, seq_len, num_convs]
         with tf.variable_scope('QRNN/Conv_with_attention/'):
-            # TODO shape
-            W_conv = tf.get_variable('W', [], initializer=self.initializer)
-            # TODO get conv variables
-            W_k = tf.get_variable('W_k', [], initializer=self.initializer)
-            W_c = tf.get_variable('W_c', [], initializer=self.initializer)
-            b_o = tf.get_variable('b_o', [], initializer=self.initializer)
+            filter_shape = _get_filter_shape(inputs.shape[2])
+            attn_weight_shape = [self.num_convs, self.num_convs]
+
+            W_k = tf.get_variable('W_k', attn_weight_shape,
+                                  initializer=self.initializer)
+            W_c = tf.get_variable('W_c', attn_weight_shape,
+                                  initializer=self.initializer)
+            b_o = tf.get_variable('b_o', [self.num_convs],
+                                  initializer=self.initializer)
+            W_conv = tf.get_variable('W_conv', self.filter_shape,
+                                initializer=self.initializer)
+            b = tf.get_variable('b_conv', [self.num_convs*3],
+                                initializer=self.initializer)
+
+            num_pads = self.conv_size - 1
+            # input dims ~should~ now be [batch_size, sequence_length,
+            #                             num_convs, 1]
+            padded_input = tf.pad(tf.expand_dims(inputs, -1),
+                                  [[0, 0], [num_pads, 0],
+                                   [0, 0], [0, 0]],
+                                  "CONSTANT")
+            conv = tf.nn.conv2d(
+                padded_input,
+                W_conv,
+                strides=[1, 1, 1, 1],
+                padding="VALID",
+                name="conv") + b
+            # conv dims: [batch_size, sequence_length,
+            #             1, num_convs*3]
+            # squeeze out 3rd D
+            # split 4th (now 3rd) dim into 3
+            Z, F, O = tf.split(2, 3, tf.squeeze(conv))
 
             # do normal conv with encode_output
-            Z, F, O = None
             Z = tf.tanh(Z)
             F = tf.sigmoid(F)
             O = tf.sigmoid(O)
 
-            C = []
-            H = []
+            # calculate attention
             enc_final_state = encode_outputs[-1]
-            for i in range(self.num_convs):
-                if i == 0:
-                    C.append(np.zeros(Z[0].shape))
-                else:
-                    C.append(tf.mul(F[i], C[i-1]) + tf.mul(1-F[i], Z[i]))
-                # TODO transpose one?
-                # TODO make this more efficient
-                alpha = tf.nn.softmax(tf.matmul(C[i], enc_final_state,
-                                                transpose_b=True))
-                k_t = np.sum(tf.matmul(alpha, enc_final_state))
-                _weights = tf.add(tf.matmul(k_t, Wk), tf.matmul(C[i], W_c))
-                H.append(tf.mul(O[i], tf.add(_weights, b)))
+            C = np.zeros(Z.shape)
+            H = np.zeros(Z.shape)
+            for i in range(1, self.enc_input_size):
+                c_i = tf.mul(F[:, i, :], C[:, i-1, :]) + \
+                      tf.mul(1-F[:, i, :], Z[:, i, :])
+                C[:, i, :] = c_i
+                # C_i dim [batch, 1, num_convs]
+                # enc_final_state dim [batch, seq_len, num_convs]
+                c_dot_h = tf.reduce_sum(tf.mul(c_i, enc_final_state), axis=2)
+                # alpha dim [batch, seq_len]
+                alpha = tf.nn.softmax(c_dot_h)
+                k_t = tf.mul(alpha, enc_final_state)
+                h_i = tf.mul(O[:, i, :], (tf.matmul(k_t, W_k) + \
+                                          tf.matmul(c_i, W_c)+b_o))
+                H[:, i, :] = h_i
             return H
 
     def transform_output(self, inputs):
+        # input dim [batch, seq_len, num_convs]
+        shape = (inputs.shape[2], self.num_decoder_symbols)
         with tf.variable_scope('QRNN/Transform_output'):
-            # TODO shapes
-            W = tf.get_variable('W', [], initializer=self.initializer)
-            b = tf.get_variable('b', [], initializer=self.initializer)
-        return tf.add(tf.matmul(inputs, W), b)
+            W = tf.get_variable('W', shape,
+                                initializer=self.initializer)
+            b = tf.get_variable('b', [self.num_decoder_symbols],
+                                initializer=self.initializer)
+            # TODO: do efficiently
+            result = np.zeros(inputs.shape[:2] + [self.num_decoder_symbols])
+            for i in range(inputs.shape[0]):
+                input_i = inputs[i, :, :]
+                result[i, :, :] = tf.nn.xw_plus_b(inputs_i, W, b)
+        return result
+
+    def seq2seq_f(self, encoder_inputs, decoder_inputs,
+                  output_projection=None, training=False):
+        # TODO what do i do about output_projection
+        encode_outputs = []
+        embedded_inputs = get_embeddings(encoder_inputs)
+        for i in range(self.encode_layers):
+            inputs = embedded_inputs if i == 0 else encode_outputs[-1]
+            encode_outputs.append(self.conv_layer(i, inputs))
+
+        decode_outputs = []
+        for i in range(self.decode_layers):
+            # list index i of dim [batch, seq_len, state_size]
+            enc_out = encode_outputs[i][:, -1, :]
+            # TODO what do you feed in during decode lol
+            if not training:
+                decoder_inputs = None
+            is_last_layer = i == (self.decode_layers - 1)
+            if not last_layer:
+                decode_outputs.append(self.conv_with_encode_output(
+                                      i,
+                                      decoder_inputs,
+                                      enc_out))
+            else:
+                last_state = self.conv_with_attention(encode_outputs,
+                                                      decoder_inputs)
+        return self.transform_output(last_state)

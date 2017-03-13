@@ -59,7 +59,6 @@ class QRNN(object):
 
     def conv_layer(self, layer_id, inputs):
         with tf.variable_scope("QRNN/Variable/Convolution/"+str(layer_id)):
-            inputs.shape()
             tf.shape(inputs)
             filter_shape = self._get_filter_shape(tf.shape(inputs)[2])
             W = tf.get_variable('W', filter_shape,

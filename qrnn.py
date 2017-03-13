@@ -16,16 +16,22 @@ class QRNN(object):
         self.decode_layers = num_layers
         self.conv_size = conv_size
         self.num_convs = num_convs
-        self.filter_shape = [conv_size, embedding_size, 1, num_convs*3]
         self.initializer = None
+
+    def get_embeddings(word_ids):
+        with tf.variable_scope('QRNN/embeddings'):
+            W = tf.get_variable('W', [self.num_encoder_symbols,
+                                      self.embedding_size],
+                                initializer=self.initializer)
+            return tf.nn.embedding_lookup(W, word_ids)
 
     def seq2seq_f(self, encoder_inputs, decoder_inputs,
                   output_projection=None, training=False):
-        # TODO embed inputs??
         # TODO what do i do about output_projection
         encode_outputs = []
+        embedded_inputs = get_embeddings(encoder_inputs)
         for i in range(self.encode_layers):
-            inputs = encoder_inputs if i == 0 else encode_outputs[-1]
+            inputs = embedded_inputs if i == 0 else encode_outputs[-1]
             encode_outputs.append(self.conv_layer(i, inputs))
 
         decode_outputs = []
@@ -46,21 +52,40 @@ class QRNN(object):
         return self.transform_output(last_state)
 
     def fo_pool(self, Z, F, O):
-        H = [np.zeros(Z[0].shape)]
-        C = [np.zeros(Z[0].shape)]
-        for i in range(1, self.num_convs):
-            C.append(tf.mul(F[i], C[i-1]) + tf.mul(1-F[i], Z[i]))
-            H.append(tf.mul(O[i], C[i]))
-        return H
+        # Z, F, O dims: [batch_size, sequence_length, num_convs]
+        H = np.zeros(Z.shape)
+        C = np.zeros(Z.shape)
+        for i in range(1, self.enc_input_size):
+            C[:, i, :] = tf.mul(F[:, i, :], C[:, i-1, :]) + \
+                         tf.mul(1-F[:, i, :], Z[:, i, :])
+            H[:, i, :] = tf.mul(O[:, i, :], C[:, i, :])
+        # i think we want output [batch, seq_len, num_convs, 1]
+        return tf.expand_dims(np.array(H), -1)
 
     def f_pool(self, Z, F):
-        H = [np.zeros(Z[0].shape)]
-        for i in range(1,):
-            H.append(tf.mul(F[i], H[i-1]) + tf.mul(1-F[i]))
-        return H
+        # Z, F dims: [batch_size, sequence_length, num_convs]
+        H = H = np.zeros(Z.shape)
+        for i in range(1, self.enc_input_size):
+            H[:, i, :] = tf.mul(F[:, i, :], H[:, i-1, :]) + \
+                         tf.mul(1-F[:, i, :])
+        return tf.expand_dims(np.array(H), -1)
+
+    def _get_filter_shape(vec_size):
+        return [self.conv_size, vec_size, 1, self.num_convs*3]
+
+    # convolution dimension results maths
+    # out_height = ceil(float(in_height - filter_height + 1) /
+    #                   float(strides[1])) = sequence_length
+    # out_width  = ceil(float(in_width - filter_width + 1) /
+    #                   float(strides[2])) = 1
+    # in_height = sequence_length + filter_height - 1
+    # filter_height = conv_size
+    # in_width = embedding_size
+    # filter_width = embedding_size
 
     def conv_layer(self, layer_id, inputs):
         with tf.variable_scope("QRNN/Variable/Convolution/"+str(layer_id)):
+            filter_shape = _get_filter_shape(inputs.shape[2])
             W = tf.get_variable('W', self.filter_shape,
                                 initializer=self.initializer)
             b = tf.get_variable('b', [num_filters],
@@ -79,10 +104,10 @@ class QRNN(object):
                 padding="VALID",
                 name="conv") + b
             # conv dims: [batch_size, sequence_length,
-            #             embedding_size, num_convs*3]
-            # so split 4th dim into 3
-            # split conv into Z, F, and O, each now size num_convs in 4th D
-            Z, F, O = tf.split(3, 3, conv)
+            #             1, num_convs*3]
+            # squeeze out 3rd D
+            # split 4th (now 3rd) dim into 3
+            Z, F, O = tf.split(2, 3, tf.squeeze(conv))
             return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
 
     def linear_layer(self, layer_id, inputs):

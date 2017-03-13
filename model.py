@@ -326,6 +326,6 @@ class Summarizer(object):
             _, _, output_logits = self.run_step(sess, encoder_inputs,
                                                 decoder_inputs,
                                                 decoder_masks,
-                                                bucket_index, True)
+                                                bucket_index, False)
             title = self.construct_seq(output_logits)
             print(title)

@@ -18,7 +18,7 @@ class QRNN(object):
         self.num_convs = num_convs
         self.initializer = None
 
-    def get_embeddings(word_ids):
+    def get_embeddings(self, word_ids):
         with tf.variable_scope('QRNN/embeddings'):
             W = tf.get_variable('W', [self.num_encoder_symbols,
                                       self.embedding_size],
@@ -44,7 +44,7 @@ class QRNN(object):
                          tf.mul(1-F[:, i, :])
         return np.array(H)
 
-    def _get_filter_shape(vec_size):
+    def _get_filter_shape(self, vec_size):
         return [self.conv_size, vec_size, 1, self.num_convs*3]
 
     # convolution dimension results maths
@@ -59,8 +59,8 @@ class QRNN(object):
 
     def conv_layer(self, layer_id, inputs):
         with tf.variable_scope("QRNN/Variable/Convolution/"+str(layer_id)):
-            filter_shape = _get_filter_shape(inputs.shape[2])
-            W = tf.get_variable('W', self.filter_shape,
+            filter_shape = self._get_filter_shape(inputs.shape[2])
+            W = tf.get_variable('W', filter_shape,
                                 initializer=self.initializer)
             b = tf.get_variable('b', [self.num_convs*3],
                                 initializer=self.initializer)
@@ -96,7 +96,7 @@ class QRNN(object):
             # TODO do this efficiently
             for i in range(inputs.shape[0]):
                 input_i = inputs[i, :, :]
-                result[i, :, :] = tf.nn.xw_plus_b(inputs_i, W, b)
+                result[i, :, :] = tf.nn.xw_plus_b(input_i, W, b)
             Z, F, O = tf.split(1, 3, result)
             return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
 
@@ -104,8 +104,8 @@ class QRNN(object):
         with tf.variable_scope("QRNN/Variable/Conv_w_enc_out/"+str(layer_id)):
             v_shape = (self.num_convs, self.num_convs*3)
             if inputs is not None:
-                filter_shape = _get_filter_shape(inputs.shape[2])
-                W = tf.get_variable('W', self.filter_shape,
+                filter_shape = self._get_filter_shape(inputs.shape[2])
+                W = tf.get_variable('W', filter_shape,
                                     initializer=self.initializer)
             V = tf.get_variable('V', v_shape,
                                 initializer=self.initializer)
@@ -131,46 +131,47 @@ class QRNN(object):
             Z_conv, F_conv, O_conv = tf.split(2, 3, tf.squeeze(conv))
             Z_v, F_v, O_v = tf.split(2, 3, tf.matmul(h_t, V))
             return self.fo_pool(tf.tanh(Z_conv - Z_v),
-                   tf.sigmoid(F_conv - F_v),
-                   tf.sigmoid(O_conv - O_v))
+                                tf.sigmoid(F_conv - F_v),
+                                tf.sigmoid(O_conv - O_v))
 
-    def linear_with_encode_output(self, layer_id, inputs=None, h_t):
+    def linear_with_encode_output(self, layer_id, h_t, inputs=None):
         # input dim [batch, seq_len, num_convs or embedding_size]
         # h_t dim [batch, 1, num_convs]
-        if inputs is not None:
-            w_shape = (inputs.shape[2], self.num_convs*3)
-        v_shape = (self.num_convs, self.num_convs*3)
-        with tf.variable_scope('QRNN/Linear_with_encode/'+str(layer_id)):
-            if inputs is not None:
-                W = tf.get_variable('W', w_shape,
-                                    initializer=self.initializer)
-            V = tf.get_variable('V', v_shape,
-                                initializer=self.initializer)
-            b = tf.get_variable('b', [self.num_convs*3],
-                                initializer=self.initializer)
-
-            # idk if these matrix multiplications are right
-            _sum = tf.matmul(h_t, V)
-            if inputs is not None:
-                _sum = tf.add(_sum, tf.matmul(inputs, W))
-            _weighted = tf.add(_sum, b)
-
-            result = np.zeros([inputs.shape[:2]]+[self.num_convs*3])
-            # TODO: do this efficiently
-            for i in range(inputs.shape[0]):
-                result_i = tf.matmul(h_t, V) + b
-                if inputs is not None:
-                    input_i = inputs[i, :, :]
-                    result_i += tf.matmul(input_i, W)
-                result[i, :, :] = result_i
-
-            Z, F, O = tf.split(1, 3, result)
-            return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
+        # if inputs is not None:
+        #     w_shape = (inputs.shape[2], self.num_convs*3)
+        # v_shape = (self.num_convs, self.num_convs*3)
+        # with tf.variable_scope('QRNN/Linear_with_encode/'+str(layer_id)):
+        #     if inputs is not None:
+        #         W = tf.get_variable('W', w_shape,
+        #                             initializer=self.initializer)
+        #     V = tf.get_variable('V', v_shape,
+        #                         initializer=self.initializer)
+        #     b = tf.get_variable('b', [self.num_convs*3],
+        #                         initializer=self.initializer)
+        #
+        #     # idk if these matrix multiplications are right
+        #     _sum = tf.matmul(h_t, V)
+        #     if inputs is not None:
+        #         _sum = tf.add(_sum, tf.matmul(inputs, W))
+        #     _weighted = tf.add(_sum, b)
+        #
+        #     result = np.zeros([inputs.shape[:2]]+[self.num_convs*3])
+        #     # TODO: do this efficiently
+        #     for i in range(inputs.shape[0]):
+        #         result_i = tf.matmul(h_t, V) + b
+        #         if inputs is not None:
+        #             input_i = inputs[i, :, :]
+        #             result_i += tf.matmul(input_i, W)
+        #         result[i, :, :] = result_i
+        #
+        #     Z, F, O = tf.split(1, 3, result)
+        #     return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
+        pass
 
     def conv_with_attention(self, encode_outputs, inputs):
         # input dim [batch, seq_len, num_convs]
         with tf.variable_scope('QRNN/Conv_with_attention/'):
-            filter_shape = _get_filter_shape(inputs.shape[2])
+            filter_shape = self._get_filter_shape(inputs.shape[2])
             attn_weight_shape = [self.num_convs, self.num_convs]
 
             W_k = tf.get_variable('W_k', attn_weight_shape,
@@ -179,8 +180,8 @@ class QRNN(object):
                                   initializer=self.initializer)
             b_o = tf.get_variable('b_o', [self.num_convs],
                                   initializer=self.initializer)
-            W_conv = tf.get_variable('W_conv', self.filter_shape,
-                                initializer=self.initializer)
+            W_conv = tf.get_variable('W_conv', filter_shape,
+                                     initializer=self.initializer)
             b = tf.get_variable('b_conv', [self.num_convs*3],
                                 initializer=self.initializer)
 
@@ -222,7 +223,7 @@ class QRNN(object):
                 # alpha dim [batch, seq_len]
                 alpha = tf.nn.softmax(c_dot_h)
                 k_t = tf.mul(alpha, enc_final_state)
-                h_i = tf.mul(O[:, i, :], (tf.matmul(k_t, W_k) + \
+                h_i = tf.mul(O[:, i, :], (tf.matmul(k_t, W_k) +
                                           tf.matmul(c_i, W_c)+b_o))
                 H[:, i, :] = h_i
             return H
@@ -239,14 +240,14 @@ class QRNN(object):
             result = np.zeros(inputs.shape[:2] + [self.num_decoder_symbols])
             for i in range(inputs.shape[0]):
                 input_i = inputs[i, :, :]
-                result[i, :, :] = tf.nn.xw_plus_b(inputs_i, W, b)
+                result[i, :, :] = tf.nn.xw_plus_b(input_i, W, b)
         return result
 
     def seq2seq_f(self, encoder_inputs, decoder_inputs,
                   output_projection=None, training=False):
         # TODO what do i do about output_projection
         encode_outputs = []
-        embedded_inputs = get_embeddings(encoder_inputs)
+        embedded_inputs = self.get_embeddings(encoder_inputs)
         for i in range(self.encode_layers):
             inputs = embedded_inputs if i == 0 else encode_outputs[-1]
             encode_outputs.append(self.conv_layer(i, inputs))
@@ -259,7 +260,7 @@ class QRNN(object):
             if not training:
                 decoder_inputs = None
             is_last_layer = i == (self.decode_layers - 1)
-            if not last_layer:
+            if not is_last_layer:
                 decode_outputs.append(self.conv_with_encode_output(
                                       i,
                                       enc_out,

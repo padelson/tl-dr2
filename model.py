@@ -19,7 +19,7 @@ class Summarizer(object):
             num_decoder_symbols=self.dec_vocab,
             embedding_size=config.HIDDEN_SIZE,
             output_projection=self.output_projection,
-            feed_previous=not do_decode)
+            feed_previous=do_decode)
 
     def _construct_seq(self, output_logits):
         output_logits = np.array(output_logits)

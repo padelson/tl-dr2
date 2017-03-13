@@ -151,9 +151,6 @@ def build_vocab():
                 dist[bucketize(headline, text)] += 1
                 count_words(vocab, headline, text)
 
-            print vocab
-            assert False
-
             h.close()
             t.close()
 
@@ -222,7 +219,7 @@ def find_dist():
 start_time = time.time()
 #test()
 #makeDirs()
-ostest()
+#ostest()
 build_vocab()
 #find_dist()
 #ostest()

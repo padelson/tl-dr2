@@ -151,9 +151,6 @@ def build_vocab():
                 dist[bucketize(headline, text)] += 1
                 count_words(vocab, headline, text)
 
-            print vocab
-            assert False
-
             h.close()
             t.close()
 

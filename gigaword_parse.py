@@ -104,33 +104,20 @@ def process(dirname=".", filename="example_data", file_num=0):
 
 def ostest():
     file_num = 0
-    for i in range(3):
+    for i in range(1,4):
         path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
         for dirname,_,filenames in os.walk(path):
             for filename in filenames:
                 process(dirname, filename, file_num)
                 file_num += 1
 
-def count_words(filename, vocab, dist):
-    h = open('/datadrive/gigaword_parsed/headlines/' + filename, 'r')
-    t = open('/datadrive/gigaword_parsed/texts/' + filename, 'r')
-
-    #h = open('test_data/headlines2.txt', 'r')
-    #t = open('test_data/text2.txt', 'r')
-
-    for headline in h:
-        headline = headline.translate(None, punctuation+'\n').split(' ')
-        text = t.readline().translate(None, punctuation+'\n').split(' ')
-
-        dist[(len(headline)/5, len(text)/10)] += 1
-
-        for i, word in enumerate(headline):
-            vocab[word] += 1
-        for i, word in enumerate(text):
-            vocab[word] += 1
-
-    h.close()
-    t.close()
+def count_words(vocab, headline, text):
+    headline = headline.translate(None, punctuation+'\n').split()
+    text = text.translate(None, punctuation+'\n').split()
+    for word in headline:
+        vocab[word] += 1
+    for word in text:
+        vocab[word] += 1
 
 def write(f, d):
     arr = sorted(d.items(), key = lambda x: x[0])
@@ -148,11 +135,25 @@ def build_vocab():
     enc.write('<pad>\n<unk>\n<s>\n<\s>\n')
     dec.write('<pad>\n<unk>\n<s>\n<\s>\n')
 
-    for i in range(1,4):
-        path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
-        for _,_,filenames in os.walk(path):
-            for filename in filenames:
-                count_words(filename, vocab, dist)
+    directories = ('train', 'dev', 'test')
+    for d in directories:
+        path = '/datadrive/gigaword_parsed/%s/headlines/' % d
+        print path
+        for filename in os.listdir(path):
+            h = open(path+filename, 'r')
+            t = open('/datadrive/gigaword_parsed/%s/texts/%s' % (d, filename), 'r')
+
+            for headline in h:
+                text = t.readline()
+                dist[bucketize(headline, text)] += 1
+                count_words(vocab, headline, text)
+
+            print vocab
+            assert False
+
+            h.close()
+            t.close()
+
     #count_words(None, vocab, dist)
     top10000 = sorted(vocab.items(), key=lambda x: x[1], reverse=True)[:10000]
     for entry in top10000:
@@ -218,8 +219,8 @@ def find_dist():
 start_time = time.time()
 #test()
 #makeDirs()
-#ostest()
-#build_vocab()
-find_dist()
+ostest()
+build_vocab()
+#find_dist()
 #ostest()
 print 'time %f' % (time.time() - start_time)

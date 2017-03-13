@@ -51,7 +51,8 @@ class Summarizer(object):
         print 'Setting up data took', time.time() - start, 'seconds'
         print 'Encoder vocab size:', len(self.enc_dict)
         print 'Encoder vocab size:', len(self.dec_dict)
-        print 'Number of training samples', self.num_train_points
+        print 'Number of training samples', [len(x['dec_input'])
+                                             for x in self.train_data]
 
     def _setup_sess_dir(self):
         print 'Setting up directory for session'
@@ -252,6 +253,7 @@ class Summarizer(object):
                                      output_logits[:, i, :]))
                 eval_iter += 1
                 if done:
+                    eval_iter = 0
                     break
             loss_text = 'Test bucket:', bucket_index, 'Loss:', bucket_loss
             print loss_text

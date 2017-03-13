@@ -243,13 +243,16 @@ class QRNN(object):
                 result[i, :, :] = tf.nn.xw_plus_b(input_i, W, b)
         return result
 
+    # inputs are lists of length sequence_length,
+    # where each element is a placeholder containing all elements in batch
     def seq2seq_f(self, encoder_inputs, decoder_inputs,
                   output_projection=None, training=False):
         # TODO what do i do about output_projection
         encode_outputs = []
-        embedded_inputs = np.array(self.get_embeddings(encoder_inputs))
-        encoder_inputs = np.array(encoder_inputs)
-        decoder_inputs = np.array(decoder_inputs)
+        encoder_inputs = tf.pack(encoder_inputs)
+        decoder_inputs = tf.pack(decoder_inputs)
+        embedded_inputs = self.get_embeddings(encoder_inputs)
+
         for i in range(self.encode_layers):
             inputs = embedded_inputs if i == 0 else encode_outputs[-1]
             encode_outputs.append(self.conv_layer(i, inputs))

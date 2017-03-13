@@ -23,7 +23,7 @@ class QRNN(object):
             W = tf.get_variable('W', [self.num_encoder_symbols,
                                       self.embedding_size],
                                 initializer=self.initializer)
-            return tf.nn.embedding_lookup(W, [1,2])
+            return tf.nn.embedding_lookup(W, word_ids)
 
     def fo_pool(self, Z, F, O):
         # Z, F, O dims: [batch_size, sequence_length, num_convs]
@@ -246,15 +246,14 @@ class QRNN(object):
 
     def seq2seq_f(self, encoder_inputs, decoder_inputs,
                   output_projection=None, training=False):
-        encoder_inputs = np.array(encoder_inputs)
-        decoder_inputs = np.array(decoder_inputs)
         # TODO what do i do about output_projection
         encode_outputs = []
         embedded_inputs = self.get_embeddings(encoder_inputs)
+        encoder_inputs = np.array(encoder_inputs)
+        decoder_inputs = np.array(decoder_inputs)
         for i in range(self.encode_layers):
             inputs = embedded_inputs if i == 0 else encode_outputs[-1]
             encode_outputs.append(self.conv_layer(i, inputs))
-
         decode_outputs = []
         for i in range(self.decode_layers):
             # list index i of dim [batch, seq_len, state_size]

@@ -8,9 +8,18 @@ import config
 import data
 import utils
 
+from qrnn import QRNN
+
 
 class Summarizer(object):
-    def _seq_f(self, encoder_inputs, decoder_inputs, do_decode):
+    def _seq_f(self, encoder_inputs, decoder_inputs, do_decode, bucket):
+        qrnn = QRNN(self.enc_vocab, self.dec_vocab, config.BATCH_SIZE,
+                    config.HIDDEN_SIZE, bucket[0], bucket[1],
+                    config.NUM_LAYERS, config.CONV_SIZE, config.NUM_CONVS)
+        # TODO output projection
+        return qrnn.seq2seq_f(encoder_inputs, decoder_inputs,
+                              output_projection=self.output_projection,
+                              training=not do_decode)
         return tf.nn.seq2seq.embedding_attention_seq2seq(
             encoder_inputs,
             decoder_inputs,

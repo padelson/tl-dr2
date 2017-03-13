@@ -169,8 +169,8 @@ def find_dist():
         path = '/datadrive/LDC2011T07_English-Gigaword-Fifth-Edition/disc%d/gigaword_eng_5_d%d/data/' % (i,i)
         for _,_,filenames in os.walk(path):
             for filename in filenames:
-                h = open('/datadrive/headlines/'+filename, 'r')
-                t = open('/datadrive/texts/'+filename, 'r')
+                h = open('/datadrive/gigaword_parsed/headlines/'+filename, 'r')
+                t = open('/datadrive/gigaword_parsed/texts/'+filename, 'r')
 
                 for headline in h:
                     text = t.readline()

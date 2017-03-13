@@ -29,7 +29,7 @@ class QRNN(object):
         # Z, F, O dims: [batch_size, sequence_length, num_convs]
         H = np.zeros(Z.shape)
         C = np.zeros(Z.shape)
-        for i in range(1, self.enc_input_size):
+        for i in range(1, Z.shape[1]):
             C[:, i, :] = tf.mul(F[:, i, :], C[:, i-1, :]) + \
                          tf.mul(1-F[:, i, :], Z[:, i, :])
             H[:, i, :] = tf.mul(O[:, i, :], C[:, i, :])
@@ -39,7 +39,7 @@ class QRNN(object):
     def f_pool(self, Z, F):
         # Z, F dims: [batch_size, sequence_length, num_convs]
         H = H = np.zeros(Z.shape)
-        for i in range(1, self.enc_input_size):
+        for i in range(1, Z.shape[1]):
             H[:, i, :] = tf.mul(F[:, i, :], H[:, i-1, :]) + \
                          tf.mul(1-F[:, i, :])
         return np.array(H)
@@ -100,8 +100,39 @@ class QRNN(object):
             Z, F, O = tf.split(1, 3, result)
             return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
 
-    def conv_with_encode_output(self, layer_id):
-        raise NotImplementedError
+    def conv_with_encode_output(self, layer_id, inputs=None, h_t):
+        with tf.variable_scope("QRNN/Variable/Conv_w_enc_out/"+str(layer_id)):
+            v_shape = (self.num_convs, self.num_convs*3)
+            if inputs is not None:
+                filter_shape = _get_filter_shape(inputs.shape[2])
+                W = tf.get_variable('W', self.filter_shape,
+                                    initializer=self.initializer)
+            V = tf.get_variable('V', v_shape,
+                                initializer=self.initializer)
+            b = tf.get_variable('b', [self.num_convs*3],
+                                initializer=self.initializer)
+            num_pads = self.conv_size - 1
+            # input dims ~should~ now be [batch_size, sequence_length,
+            #                             embedding_size, 1]
+            padded_input = tf.pad(tf.expand_dims(inputs, -1),
+                                  [[0, 0], [num_pads, 0],
+                                   [0, 0], [0, 0]],
+                                  "CONSTANT")
+            conv = tf.nn.conv2d(
+                padded_input,
+                W,
+                strides=[1, 1, 1, 1],
+                padding="VALID",
+                name="conv") + b
+            # conv dims: [batch_size, sequence_length,
+            #             1, num_convs*3]
+            # squeeze out 3rd D
+            # split 4th (now 3rd) dim into 3
+            Z_conv, F_conv, O_conv = tf.split(2, 3, tf.squeeze(conv))
+            Z_v, F_v, O_v = tf.split(2, 3, tf.matmul(h_t, V))
+            return self.fo_pool(tf.tanh(Z_conv - Z_v),
+                   tf.sigmoid(F_conv - F_v),
+                   tf.sigmoid(O_conv - O_v))
 
     def linear_with_encode_output(self, layer_id, inputs=None, h_t):
         # input dim [batch, seq_len, num_convs or embedding_size]
@@ -118,9 +149,10 @@ class QRNN(object):
             b = tf.get_variable('b', [self.num_convs*3],
                                 initializer=self.initializer)
 
-            _sum = tf.mul(h_t, V)
+            # idk if these matrix multiplications are right
+            _sum = tf.matmul(h_t, V)
             if inputs is not None:
-                _sum = tf.add(_sum, tf.mul(inputs, W))
+                _sum = tf.add(_sum, tf.matmul(inputs, W))
             _weighted = tf.add(_sum, b)
 
             result = np.zeros([inputs.shape[:2]]+[self.num_convs*3])
@@ -180,7 +212,7 @@ class QRNN(object):
             enc_final_state = encode_outputs[-1]
             C = np.zeros(Z.shape)
             H = np.zeros(Z.shape)
-            for i in range(1, self.enc_input_size):
+            for i in range(1, self.dec_input_size):
                 c_i = tf.mul(F[:, i, :], C[:, i-1, :]) + \
                       tf.mul(1-F[:, i, :], Z[:, i, :])
                 C[:, i, :] = c_i
@@ -222,7 +254,7 @@ class QRNN(object):
         decode_outputs = []
         for i in range(self.decode_layers):
             # list index i of dim [batch, seq_len, state_size]
-            enc_out = encode_outputs[i][:, -1, :]
+            enc_out = tf.squeeze(encode_outputs[i][:, -1, :])
             # TODO what do you feed in during decode lol
             if not training:
                 decoder_inputs = None

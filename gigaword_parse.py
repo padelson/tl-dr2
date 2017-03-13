@@ -135,7 +135,8 @@ def count_words(filename, vocab, dist):
 def write(f, d):
     arr = sorted(d.items(), key = lambda x: x[0])
     for i, elem in enumerate(arr):
-        f.write('%d,%d\t\t' % (elem[0][0], elem[0][1]))
+        #f.write('%d,%d\t\t' % (elem[0][0], elem[0][1]))
+        f.write('%s\t' % elem[0])
         f.write('%d\n' % elem[1])
 
 def build_vocab():

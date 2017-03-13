@@ -16,7 +16,7 @@ class QRNN(object):
         self.decode_layers = num_layers
         self.conv_size = conv_size
         self.num_convs = num_convs
-        self.initializer = tf.contrib.layers.xavier_initializer()
+        self.initializer = tf.random_normal_initializer()
 
     def get_embeddings(self, word_ids):
         with tf.variable_scope('QRNN/embeddings'):

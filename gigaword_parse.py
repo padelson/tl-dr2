@@ -135,7 +135,7 @@ def count_words(filename, vocab, dist):
 def write(f, d):
     arr = sorted(d.items(), key = lambda x: x[0])
     for i, elem in enumerate(arr):
-        f.write('%d,%d\t\t' % ((elem[0][0]+1) * 5, (elem[0][1]+1) * 10))
+        f.write('%d,%d\t\t' % (elem[0][0], elem[0][1])
         f.write('%d\n' % elem[1])
 
 def build_vocab():
@@ -182,13 +182,12 @@ def find_dist():
                     #print headline, text
                     #print len(headline.split()), len(text.split())
                     dist[bucketize(headline, text)] += 1
-                    print dist
-                    h.close()
-                    t.close()
-                    assert False
 
                 h.close()
                 t.close()
+        write(out, dist)
+        out.close()
+        assert False
 
 start_time = time.time()
 #test()

@@ -162,6 +162,11 @@ def build_vocab():
     enc.close()
     dec.close()
 
+def bucketize(headline, text):
+    hl_len = len(headline.split())
+    t_len = len(text.split())
+    return (hl_len, t_len)
+
 def find_dist():
     dist = collections.defaultdict(int)
     out = open('output.txt', 'w')
@@ -174,8 +179,10 @@ def find_dist():
 
                 for headline in h:
                     text = t.readline()
-                    print headline, text
-                    print len(headline.split()), len(text.split())
+                    #print headline, text
+                    #print len(headline.split()), len(text.split())
+                    dist[bucketize(headline, text)] += 1
+                    print dist
                     h.close()
                     t.close()
                     assert False

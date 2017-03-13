@@ -251,7 +251,7 @@ class QRNN(object):
         encode_outputs = []
         encoder_inputs = tf.pack(encoder_inputs)
         decoder_inputs = tf.pack(decoder_inputs)
-        embedded_inputs = self.get_embeddings(encoder_inputs)
+        embedded_inputs = tf.pack(self.get_embeddings(encoder_inputs))
 
         for i in range(self.encode_layers):
             inputs = embedded_inputs if i == 0 else encode_outputs[-1]

@@ -29,7 +29,7 @@ class QRNN(object):
         # Z, F, O dims: [batch_size, sequence_length, num_convs]
         H = tf.fill(tf.shape(Z), 0.0)
         C = tf.fill(tf.shape(Z), 0.0)
-        for i in range(1, Z.shape[1]):
+        for i in range(1, tf.shape(Z)[1]):
             C[:, i, :] = tf.mul(F[:, i, :], C[:, i-1, :]) + \
                          tf.mul(1-F[:, i, :], Z[:, i, :])
             H[:, i, :] = tf.mul(O[:, i, :], C[:, i, :])
@@ -38,8 +38,8 @@ class QRNN(object):
 
     def f_pool(self, Z, F):
         # Z, F dims: [batch_size, sequence_length, num_convs]
-        H = H = np.zeros(Z.shape)
-        for i in range(1, Z.shape[1]):
+        H = H = np.zeros(tf.shape(Z))
+        for i in range(1, tf.shape(Z)[1]):
             H[:, i, :] = tf.mul(F[:, i, :], H[:, i-1, :]) + \
                          tf.mul(1-F[:, i, :])
         return np.array(H)
@@ -211,8 +211,8 @@ class QRNN(object):
 
             # calculate attention
             enc_final_state = encode_outputs[-1]
-            C = np.zeros(Z.shape)
-            H = np.zeros(Z.shape)
+            C = np.zeros(tf.shape(Z))
+            H = np.zeros(tf.shape(Z))
             for i in range(1, self.dec_input_size):
                 c_i = tf.mul(F[:, i, :], C[:, i-1, :]) + \
                       tf.mul(1-F[:, i, :], Z[:, i, :])

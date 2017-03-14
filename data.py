@@ -8,8 +8,8 @@ import config
 def _read_and_split_file(path):
     with open(path) as f:
         result = f.read().split('\n')
-        # if result[-1] == '':
-        #     return result[:-1]
+        if result[-1] == '':
+            return result[:-1]
         return result
 
 

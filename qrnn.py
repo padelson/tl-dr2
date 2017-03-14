@@ -221,7 +221,7 @@ class QRNN(object):
         with tf.variable_scope('QRNN/Transform_output'):
             W = tf.get_variable('W', shape,
                                 initializer=self.initializer)
-            b = tf.get_variable('b', [self.num_decoder_symbols],
+            b = tf.get_variable('b', [self.num_symbols],
                                 initializer=self.initializer)
             # TODO: do efficiently
             result = []

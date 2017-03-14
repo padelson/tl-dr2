@@ -8,18 +8,25 @@ import config
 import data
 import utils
 
-from qrnn import QRNN
+from qrnn import QRNN, init_encoder_and_decoder, seq2seq_f
 
 
 class Summarizer(object):
     def _seq_f(self, encoder_inputs, decoder_inputs, do_decode):
-        qrnn = QRNN(self.enc_vocab, self.dec_vocab, config.BATCH_SIZE,
-                    config.HIDDEN_SIZE, config.NUM_LAYERS, config.CONV_SIZE,
-                    config.NUM_CONVS)
-        # TODO output projection
-        return qrnn.seq2seq_f(encoder_inputs, decoder_inputs,
-                              output_projection=self.output_projection,
-                              training=do_decode)
+        # TODO output projection?
+        enc_seq_length = len(encoder_inputs)
+        dec_seq_length = len(decoder_inputs)
+        encoder, decoder = init_encoder_and_decoder(self.enc_vocab,
+                                                    self.dec_vocab,
+                                                    config.BATCH_SIZE,
+                                                    enc_seq_length,
+                                                    dec_seq_length,
+                                                    config.HIDDEN_SIZE,
+                                                    config.NUM_LAYERS,
+                                                    config.CONV_SIZE,
+                                                    config.NUM_CONVS)
+        return seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
+                         self.output_projection, do_decode)
 
     def _construct_seq(self, output_logits):
         output_logits = np.array(output_logits)
@@ -197,7 +204,7 @@ class Summarizer(object):
             input_feed[self.decoder_masks[step].name] = decoder_masks[step]
         last_target = self.decoder_inputs[decoder_size].name
         input_feed[last_target] = np.zeros([config.BATCH_SIZE], dtype=np.int32)
-        input_feed[self.training_placeholder] = not update_params
+        input_feed[self.training_placeholder] = update_params
         # output feed: depends on whether we do a backward step or not.
         if update_params:
             output_feed = [self.train_ops[bucket_id],  # update that does SGD.

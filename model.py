@@ -325,13 +325,14 @@ class Summarizer(object):
                         if iteration == 20 or iteration % 1000 == 0:
                             self.evaluate(sess, total_loss, iteration)
                     iteration += 1
+                    if target == 0:
+                        print 'Train loss', step_loss
                     if end_while:
                         break
                     if target != 0:
                         prog.update(get_epoch_iter(iteration, target),
                                     [("train loss", step_loss)])
-                    else:
-                        print 'Train loss', step_loss
+                        
 
             self.evaluate(sess, total_loss, iteration, test=True)
 

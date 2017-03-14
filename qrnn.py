@@ -27,13 +27,14 @@ class QRNN(object):
         # Z, F, O dims: [batch_size, sequence_length, num_convs]
         # H = tf.fill(tf.shape(Z), 0.0)
         # C = tf.fill(tf.shape(Z), 0.0)
-        H = [tf.fill(tf.pack([tf.shape(Z)[0], 1, tf.shape(Z)[2]]), 0.0)]
-        C = [tf.fill(tf.pack([tf.shape(Z)[0], 1, tf.shape(Z)[2]]), 0.0)]
+        H = [tf.fill(tf.pack([tf.shape(Z)[0], tf.shape(Z)[2]]), 0.0)]
+        C = [tf.fill(tf.pack([tf.shape(Z)[0], tf.shape(Z)[2]]), 0.0)]
         for i in range(1, self.seq_length):
-            c_i = tf.mul(F[:, i, :], C[-1]) + \
+            x = tf.mul(F[:, i, :], C[-1])
+            c_i = tf.Print(x, [tf.shape(x), tf.shape(F[:, i, :])]) + \
                   tf.mul(1-F[:, i, :], Z[:, i, :])
             # C[:, i, :] = c_i
-            C.append(tf.Print(c_i, [tf.shape(c_i), tf.shape(F[:, i, :]), tf.shape(F)]))
+            C.append(c_i)
             h_i = tf.mul(O[:, i, :], c_i)
             # H[:, i, :] = h_i
             H.append(tf.squeeze(h_i))

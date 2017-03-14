@@ -1,4 +1,4 @@
-BUCKETS = [(51, 26)]
+BUCKETS = [(16, 26), (31, 26), (51, 26)]
 HIDDEN_SIZE = 256
 NUM_LAYERS = 4
 LR = 0.5

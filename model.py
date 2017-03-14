@@ -58,7 +58,8 @@ class Summarizer(object):
         print 'Setting up data took', time.time() - start, 'seconds'
         print 'Encoder vocab size:', len(self.enc_dict)
         print 'Encoder vocab size:', len(self.dec_dict)
-        print 'Number of training samples', self.num_train_points
+        print 'Number of training samples', [len(x['dec_input']) for i, x in
+                                             self.train_data.iteritems()]
 
     def _setup_sess_dir(self):
         print 'Setting up directory for session'
@@ -158,6 +159,12 @@ class Summarizer(object):
         with tf.variable_scope('training'):
             self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False,
                                            name='global_step')
+            self.bucket_step = tf.Variable(0, dtype=tf.int32, trainable=False,
+                                           name='bucket_step')
+            self.epoch = tf.Variable(0, dtype=tf.int32, trainable=False,
+                                     name='epoch')
+            self.bucket_index = tf.Variable(0, dtype=tf.int32, trainable=False,
+                                            name='bucket_index')
             if self.create_opt:
                 self.optimizer = tf.train.GradientDescentOptimizer(config.LR)
                 trainables = tf.trainable_variables()
@@ -207,7 +214,7 @@ class Summarizer(object):
             input_feed[self.decoder_masks[step].name] = decoder_masks[step]
         last_target = self.decoder_inputs[decoder_size].name
         input_feed[last_target] = np.zeros([config.BATCH_SIZE], dtype=np.int32)
-        input_feed[self.training_placeholder] = update_params
+        input_feed[self.training_placeholder] = not update_params
         # output feed: depends on whether we do a backward step or not.
         if update_params:
             output_feed = [self.train_ops[bucket_id],  # update that does SGD.
@@ -256,6 +263,7 @@ class Summarizer(object):
                                      output_logits[:, i, :]))
                 eval_iter += 1
                 if done:
+                    eval_iter = 0
                     break
             loss_text = 'Test bucket:', bucket_index, 'Loss:', bucket_loss
             print loss_text
@@ -272,7 +280,7 @@ class Summarizer(object):
 
     def train(self):
 
-        def get_step_iter(iteration, target):
+        def get_epoch_iter(iteration, target):
             step_iter = iteration % target
             return target if iteration > 0 and step_iter == 0 else step_iter
         saver = tf.train.Saver()
@@ -280,17 +288,19 @@ class Summarizer(object):
             sess.run(tf.global_variables_initializer())
             self._check_restore_parameters(sess, saver)
             iteration = self.global_step.eval()
-            print 'Starting at iteration', iteration
             total_loss = 0
             target = int(np.ceil(self.num_train_points /
                                  float(config.BATCH_SIZE))) - 1
-            cur_epoch = iteration / (target+1)
+            # cur_epoch = iteration / (target+1)
+            cur_epoch = self.epoch.eval()
+            bucket_index = self.bucket_index.eval()
+            step_iter = self.bucket_step.eval()
+            print 'Starting at', iteration, cur_epoch, bucket_index, step_iter
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
+                sess.run(tf.assign(self.epoch, epoch))
                 print '\n', 'Epoch:', epoch+1
                 prog = utils.Progbar(target=target)
-                bucket_index = 0
                 while True:
-                    step_iter = get_step_iter(iteration, target)
                     batch_data = data.get_batch(self.train_data, bucket_index,
                                                 config.BUCKETS,
                                                 config.BATCH_SIZE,
@@ -304,19 +314,26 @@ class Summarizer(object):
                                                     decoder_masks,
                                                     bucket_index, True)
                     if next_bucket:
-                        bucket_index += 1
+                        step_iter = sess.run(tf.assign(self.bucket_step, 0))
+                        bucket_index = sess.run(tf.assign(self.bucket_index,
+                                                          bucket_index+1))
                     total_loss += step_loss
                     if bucket_index >= len(config.BUCKETS) or \
-                       iteration == 20 or \
-                       (iteration > 0 and iteration % 1000 == 0):
+                       iteration == 21 or \
+                       (iteration > 0 and iteration % 250 == 0):
                         saver.save(sess, os.path.join(self.checkpoint_path,
                                                       'summarizer'),
                                    global_step=iteration)
-                        self.evaluate(sess, total_loss, iteration)
+                        if iteration == 21 or iteration % 500 == 0:
+                            self.evaluate(sess, total_loss, iteration)
                     iteration += 1
                     if bucket_index >= len(config.BUCKETS):
+                        bucket_index = sess.run(tf.assign(self.bucket_index,
+                                                          0))
                         break
-                    prog.update(get_step_iter(iteration, target),
+                    step_iter = sess.run(tf.assign(self.bucket_step,
+                                                   step_iter+1))
+                    prog.update(get_epoch_iter(iteration, target),
                                 [("train loss", step_loss)])
 
             self.evaluate(sess, total_loss, iteration, test=True)
@@ -335,6 +352,6 @@ class Summarizer(object):
             _, _, output_logits = self.run_step(sess, encoder_inputs,
                                                 decoder_inputs,
                                                 decoder_masks,
-                                                bucket_index, True)
+                                                bucket_index, False)
             title = self.construct_seq(output_logits)
             print(title)

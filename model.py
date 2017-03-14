@@ -119,7 +119,7 @@ class Summarizer(object):
                                                 config.NUM_LAYERS)
         embed_init = tf.contrib.layers.xavier_initializer()
         self.embeddings = tf.Variable(embed_init([self.enc_vocab,
-                                                  self.embedding_size]))
+                                                  config.HIDDEN_SIZE]))
         training = self.training_placeholder
         self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
                                     self.encoder_inputs,

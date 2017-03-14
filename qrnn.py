@@ -30,8 +30,7 @@ class QRNN(object):
         H = [tf.fill(tf.pack([tf.shape(Z)[0], tf.shape(Z)[2]]), 0.0)]
         C = [tf.fill(tf.pack([tf.shape(Z)[0], tf.shape(Z)[2]]), 0.0)]
         for i in range(1, self.seq_length):
-            x = tf.mul(F[:, i, :], C[-1])
-            c_i = tf.Print(x, [tf.shape(x), tf.shape(F[:, i, :])]) + \
+            c_i = tf.mul(F[:, i, :], C[-1]) + \
                   tf.mul(1-F[:, i, :], Z[:, i, :])
             # C[:, i, :] = c_i
             C.append(c_i)
@@ -198,8 +197,8 @@ class QRNN(object):
 
             # calculate attention
             enc_final_state = encode_outputs[-1]
-            H = [tf.fill(tf.pack([tf.shape(Z)[0], 1, tf.shape(Z)[2]]), 0.0)]
-            C = [tf.fill(tf.pack([tf.shape(Z)[0], 1, tf.shape(Z)[2]]), 0.0)]
+            H = [tf.fill(tf.pack([tf.shape(Z)[0], tf.shape(Z)[2]]), 0.0)]
+            C = [tf.fill(tf.pack([tf.shape(Z)[0], tf.shape(Z)[2]]), 0.0)]
             for i in range(1, self.seq_length):
                 c_i = tf.mul(F[:, i, :], C[-1]) + \
                       tf.mul(1-F[:, i, :], Z[:, i, :])

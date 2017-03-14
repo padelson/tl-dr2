@@ -212,8 +212,8 @@ class QRNN(object):
                 # alpha dim [batch, seq_len]
                 alpha = tf.nn.softmax(c_dot_h)
                 k_t = tf.mul(tf.expand_dims(alpha, -1), enc_final_state)
-                x = tf.matmul(k_t, W_k)
                 y = tf.matmul(c_i, W_c)+b_o
+                x = tf.matmul(k_t, W_k)
                 h_i = tf.mul(O[:, i, :], x+y)
                 H.append(tf.squeeze(h_i))
             return tf.reshape(tf.pack(H), tf.shape(Z))

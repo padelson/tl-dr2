@@ -7,7 +7,10 @@ import config
 
 def _read_and_split_file(path):
     with open(path) as f:
-        return f.read().split('\n')
+        result = f.read().split('\n')
+        if result[-1] == '':
+            return result[:-1]
+        return result
 
 
 def _get_bucket(size, buckets):

@@ -137,7 +137,7 @@ class QRNN(object):
                 # squeeze out 3rd D
                 # split 4th (now 3rd) dim into 3
                 Z_conv, F_conv, O_conv = tf.split(2, 3, tf.squeeze(conv))
-                return pooling(tf.tanh(Z_conv + Z_v),
+                return pooling(tf.Print(tf.tanh(Z_conv + Z_v), [tf.shape(Z_conv), tf.shape(F_conv), tf.shape(O_conv), tf.shape(Z_v), tf.shape(F_v), tf.shape(O_v)]),
                                tf.sigmoid(F_conv + F_v),
                                tf.sigmoid(O_conv + O_v))
             else:

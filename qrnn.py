@@ -136,7 +136,7 @@ class QRNN(object):
                 #             1, num_convs*3]
                 # squeeze out 3rd D
                 # split 4th (now 3rd) dim into 3
-                Z_conv, F_conv, O_conv = tf.split(2, 3, tf.Print(tf.squeeze(conv), [tf.shape(tf.squeeze(conv)), tf.shape(conv), tf.shape(inputs)]))
+                Z_conv, F_conv, O_conv = tf.split(2, 3, tf.squeeze(conv))
                 Z = Z_conv + tf.expand_dims(Z_v, 1)
                 F = F_conv + tf.expand_dims(F_v, 1)
                 O = O_conv + tf.expand_dims(O_v, 1)

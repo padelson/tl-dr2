@@ -217,11 +217,11 @@ class QRNN(object):
 
     def transform_output(self, inputs):
         # input dim list of [batch, num_convs]
-        shape = (self.embedding_size, self.num_symbols-1)
+        shape = (self.embedding_size, self.num_symbols)
         with tf.variable_scope('QRNN/Transform_output'):
             W = tf.get_variable('W', shape,
                                 initializer=self.initializer)
-            b = tf.get_variable('b', [self.num_symbols-1],
+            b = tf.get_variable('b', [self.num_symbols],
                                 initializer=self.initializer)
             # TODO: do efficiently
             result = []
@@ -284,5 +284,6 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
     #     return tf.split(last_state)
     # else:
     #     return decoder.transform_output(last_state)
+    return tf.split(1, decoder.seq_length, last_state)
     return decoder.transform_output(tf.split(1, decoder.seq_length,
                                              last_state)), None

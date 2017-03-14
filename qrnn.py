@@ -226,8 +226,9 @@ class QRNN(object):
             # TODO: do efficiently
             result = []
             for i in inputs:
-                # result.append(tf.nn.xw_plus_b(i, W, b))
-                result.append(tf.constant(np.ones((5,5))))
+                result.append(tf.nn.xw_plus_b(i, W, b))
+                sess = tf.Session()
+                tf.shape(result[-1]).eval(session=sess)
         return result
 
 

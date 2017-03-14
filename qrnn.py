@@ -113,7 +113,7 @@ class QRNN(object):
                                 initializer=self.initializer)
             b = tf.get_variable('b', [self.num_convs*3],
                                 initializer=self.initializer)
-            Z_v, F_v, O_v = tf.split(2, 3, tf.matmul(h_t, V))
+            Z_v, F_v, O_v = tf.split(2, 3, tf.mul(h_t, V))
             if inputs is not None:
                 filter_shape = self._get_filter_shape(input_shape)
                 W = tf.get_variable('W', filter_shape,
@@ -265,9 +265,9 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
     for i in range(decoder.num_layers):
         # list index i of dim [batch, seq_len, state_size]
         enc_out = tf.squeeze(encode_outputs[i][:, -1, :])
-        # TODO what do you feed in during decode lol
         inputs = embedded_dec_inputs if i == 0 else decode_outputs[-1]
         input_shape = decoder.embedding_size if i == 0 else decoder.num_convs
+        # TODO what do you feed in during decode lol
         # inputs, input_shape = tf.cond(training, lambda: (inputs, input_shape),
         #                               lambda: (None, None))
         is_last_layer = i == (decoder.num_layers - 1)

@@ -278,7 +278,6 @@ class Summarizer(object):
             sess.run(tf.global_variables_initializer())
             self._check_restore_parameters(sess, saver)
             iteration = self.global_step.eval()
-            total_loss = 0
             target = int(np.ceil(self.num_train_points /
                                  float(config.BATCH_SIZE))) - 1
             # cur_epoch = iteration / (target+1)
@@ -287,6 +286,7 @@ class Summarizer(object):
             step_iter = self.bucket_step.eval()
             print 'Starting at', iteration, cur_epoch, bucket_index, step_iter
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
+                total_loss = 0
                 sess.run(tf.assign(self.epoch, epoch))
                 print '\n', 'Epoch:', epoch+1
                 if target != 0:
@@ -332,7 +332,6 @@ class Summarizer(object):
                     if target != 0:
                         prog.update(get_epoch_iter(iteration, target),
                                     [("train loss", step_loss)])
-                        
 
             self.evaluate(sess, total_loss, iteration, test=True)
 

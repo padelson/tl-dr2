@@ -282,5 +282,5 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
         else:
             last_state = decoder.conv_with_attention(i, encode_outputs,
                                                      inputs, input_shape)
-    result = tf.split(1, decoder.seq_length, last_state)
-    return tf.Print(result, [tf.shape(r) for r in result]), None
+
+    return tf.split(1, decoder.seq_length, last_state), None

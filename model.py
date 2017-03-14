@@ -334,6 +334,9 @@ class Summarizer(object):
                                     [("train loss", step_loss)])
 
             self.evaluate(sess, total_loss, iteration, test=True)
+            saver.save(sess, os.path.join(self.checkpoint_path,
+                                          'summarizer'),
+                       global_step=iteration)
 
     def summarize(self, inputs):
         saver = tf.train.Saver()

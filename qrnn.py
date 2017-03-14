@@ -104,8 +104,8 @@ class QRNN(object):
     #         Z, F, O = tf.split(1, 3, result)
     #         return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
 
-    def conv_with_encode_output(self, layer_id, h_t, inputs=None,
-                                input_shape=None, pool=True):
+    def conv_with_encode_output(self, layer_id, h_t, inputs,
+                                input_shape, do_conv=None, pool=True):
         pooling = self.fo_pool if pool else lambda x, y, z: (x, y, z)
         with tf.variable_scope("QRNN/Variable/Conv_w_enc_out/"+str(layer_id)):
             v_shape = (self.num_convs, self.num_convs*3)
@@ -114,7 +114,7 @@ class QRNN(object):
             b = tf.get_variable('b', [self.num_convs*3],
                                 initializer=self.initializer)
             Z_v, F_v, O_v = tf.split(1, 3, tf.matmul(h_t, V))
-            if inputs is not None:
+            def conv():
                 filter_shape = self._get_filter_shape(input_shape)
                 W = tf.get_variable('W', filter_shape,
                                     initializer=self.initializer)
@@ -143,10 +143,16 @@ class QRNN(object):
                 return pooling(tf.tanh(Z),
                                tf.sigmoid(F),
                                tf.sigmoid(O))
-            else:
+
+            def no_conv():
                 return pooling(tf.tanh(Z_v),
                                tf.sigmoid(F_v),
                                tf.sigmoid(O_v))
+
+            if do_conv is None:
+                return conv()
+            else:
+                return tf.cond(do_conv, conv, no_conv)
 
     # def linear_with_encode_output(self, layer_id, h_t, inputs=None):
         # input dim [batch, seq_len, num_convs or embedding_size]
@@ -278,7 +284,8 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
                                   i,
                                   enc_out,
                                   inputs,
-                                  input_shape))
+                                  input_shape,
+                                  training))
         else:
             last_state = decoder.conv_with_attention(i, encode_outputs,
                                                      inputs, input_shape)

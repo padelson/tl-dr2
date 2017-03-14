@@ -249,7 +249,6 @@ class Summarizer(object):
                 decoder_inputs = batch_data[1]
                 decoder_masks = batch_data[2]
                 done = batch_data[3]
-                print 'shapes:', len(encoder_inputs), len(decoder_inputs)
                 _, step_loss, output_logits = self.run_step(sess,
                                                             encoder_inputs,
                                                             decoder_inputs,

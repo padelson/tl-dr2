@@ -252,7 +252,6 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
     encode_outputs = []
     # pack inputs to be shape [sequence_length, batch_size]
     encoder_inputs = tf.transpose(tf.pack(encoder_inputs))
-    decoder_inputs = tf.transpose(tf.pack(decoder_inputs))
 
     # embed to be shape [batch_size, sequence_length, embed_size]
     embedded_enc_inputs = encoder.get_embeddings(embeddings, encoder_inputs)
@@ -263,6 +262,7 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
         input_shape = encoder.embedding_size if i == 0 else encoder.num_convs
         encode_outputs.append(encoder.conv_layer(i, inputs, input_shape))
 
+    decoder_inputs = tf.transpose(tf.pack(decoder_inputs))
     decode_outputs = []
     for i in range(decoder.num_layers):
         # list index i of dim [batch, seq_len, state_size]

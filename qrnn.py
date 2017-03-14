@@ -136,7 +136,7 @@ class QRNN(object):
                 #             1, num_convs*3]
                 # squeeze out 3rd D
                 # split 4th (now 3rd) dim into 3
-                Z_conv, F_conv, O_conv = tf.split(2, 3, tf.Print(tf.squeeze(conv), [tf.shape(conv)]))
+                Z_conv, F_conv, O_conv = tf.split(2, 3, tf.Print(tf.squeeze(conv), tf.shape(tf.squeeze(conv)), tf.shape(conv), tf.shape(inputs)))
                 Z = Z_conv + tf.expand_dims(Z_v, 1)
                 F = F_conv + tf.expand_dims(F_v, 1)
                 O = O_conv + tf.expand_dims(O_v, 1)
@@ -255,7 +255,6 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
 
     # embed to be shape [batch_size, sequence_length, embed_size]
     embedded_enc_inputs = encoder.get_embeddings(embeddings, encoder_inputs)
-    embedded_dec_inputs = decoder.get_embeddings(embeddings, decoder_inputs)
 
     for i in range(encoder.num_layers):
         inputs = embedded_enc_inputs if i == 0 else encode_outputs[-1]
@@ -263,6 +262,7 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
         encode_outputs.append(encoder.conv_layer(i, inputs, input_shape))
 
     decoder_inputs = tf.transpose(tf.pack(decoder_inputs))
+    embedded_dec_inputs = decoder.get_embeddings(embeddings, decoder_inputs)
     decode_outputs = []
     for i in range(decoder.num_layers):
         # list index i of dim [batch, seq_len, state_size]

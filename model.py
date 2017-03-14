@@ -289,7 +289,8 @@ class Summarizer(object):
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
                 sess.run(tf.assign(self.epoch, epoch))
                 print '\n', 'Epoch:', epoch+1
-                prog = utils.Progbar(target=target)
+                if target != 0:
+                    prog = utils.Progbar(target=target)
                 while True:
                     batch_data = data.get_batch(self.train_data, bucket_index,
                                                 config.BUCKETS,
@@ -325,8 +326,12 @@ class Summarizer(object):
                     iteration += 1
                     if bucket_index >= len(config.BUCKETS):
                         break
-                    prog.update(get_epoch_iter(iteration, target),
-                                [("train loss", step_loss)])
+                    if target != 0:
+                        prog.update(get_epoch_iter(iteration, target),
+                                    [("train loss", step_loss)])
+                    else:
+                        print 'Iter', get_epoch_iter(iteration, target)
+                        print 'Train loss', step_loss
 
             self.evaluate(sess, total_loss, iteration, test=True)
 

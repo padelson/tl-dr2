@@ -212,7 +212,7 @@ class QRNN(object):
                 k_t = tf.mul(alpha, enc_final_state)
                 h_i = tf.mul(O[:, i, :], (tf.matmul(k_t, W_k) +
                                           tf.matmul(c_i, W_c)+b_o))
-                H.append(tf.squeeze(h_i)
+                H.append(tf.squeeze(h_i))
             return tf.reshape(tf.pack(H), tf.shape(Z))
 
     def transform_output(self, inputs):

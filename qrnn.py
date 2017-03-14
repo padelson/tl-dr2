@@ -226,7 +226,8 @@ class QRNN(object):
             # TODO: do efficiently
             result = []
             for i in inputs:
-                result.append(tf.nn.xw_plus_b(i, W, b))
+                # result.append(tf.nn.xw_plus_b(i, W, b))
+                result.append(None)
         return result
 
 

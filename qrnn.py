@@ -14,14 +14,14 @@ class QRNN(object):
         self.num_convs = num_convs
         self.initializer = tf.random_normal_initializer()
 
-    def get_embeddings(self, word_ids):
+    def get_embeddings(self, embeddings, word_ids):
         if word_ids is None:
             return None
-        with tf.variable_scope('QRNN/embeddings', reuse=True):
-            W = tf.get_variable('W', [self.num_symbols,
-                                      self.embedding_size],
-                                initializer=self.initializer)
-            return tf.nn.embedding_lookup(W, word_ids)
+        # with tf.variable_scope('QRNN/embeddings', reuse=True):
+        #     W = tf.get_variable('W', [self.num_symbols,
+        #                               self.embedding_size],
+        #                         initializer=self.initializer)
+        return tf.nn.embedding_lookup(embeddings, word_ids)
 
     def fo_pool(self, Z, F, O):
         # Z, F, O dims: [batch_size, sequence_length, num_convs]
@@ -235,7 +235,7 @@ def init_encoder_and_decoder(num_encoder_symbols, num_decoder_symbols,
 
 
 def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
-              output_projection, training):
+              output_projection, training, embeddings):
     # TODO what do i do about output_projection
     # inputs are lists of placeholders, each one is shape [None]
     # self.enc_input_size = len(encoder_inputs)
@@ -246,8 +246,9 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
     decoder_inputs = tf.transpose(tf.pack(decoder_inputs))
 
     # embed to be shape [batch_size, sequence_length, embed_size]
-    embedded_enc_inputs = encoder.get_embeddings(encoder_inputs)
-    embedded_dec_inputs = encoder.get_embeddings(decoder_inputs)  # TODO no cheat
+    embedded_enc_inputs = encoder.get_embeddings(embeddings, encoder_inputs)
+    # TODO put embeddings in a centralized location
+    embedded_dec_inputs = decoder.get_embeddings(embeddings, decoder_inputs)
 
     for i in range(encoder.num_layers):
         inputs = embedded_enc_inputs if i == 0 else encode_outputs[-1]

@@ -8,7 +8,7 @@ import config
 import data
 import utils
 
-from qrnn import QRNN, init_encoder_and_decoder, seq2seq_f
+from qrnn import, init_encoder_and_decoder, seq2seq_f
 
 
 class Summarizer(object):
@@ -26,7 +26,7 @@ class Summarizer(object):
                                                     config.CONV_SIZE,
                                                     config.NUM_CONVS)
         return seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
-                         self.output_projection, do_decode)
+                         self.output_projection, do_decode, self.embeddings)
 
     def _construct_seq(self, output_logits):
         output_logits = np.array(output_logits)
@@ -117,6 +117,9 @@ class Summarizer(object):
         single_cell = tf.nn.rnn_cell.GRUCell(config.HIDDEN_SIZE)
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
+        embed_init = tf.contrib.layers.xavier_initializer()
+        self.embeddings = tf.Variable(embed_init([self.num_symbols,
+                                                  self.embedding_size]))
         training = self.training_placeholder
         self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
                                     self.encoder_inputs,

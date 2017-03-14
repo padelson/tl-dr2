@@ -36,7 +36,7 @@ class QRNN(object):
             C.append(c_i)
             h_i = tf.mul(O[:, i, :], c_i)
             # H[:, i, :] = h_i
-            H.append(tf.squeeze(h_i))
+            H.append(tf.Print(tf.squeeze(h_i), [tf.shape(h_i)]))
         # i think we want output [batch, seq_len, num_convs]
         return tf.reshape(tf.pack(H), tf.shape(Z))
 
@@ -113,7 +113,6 @@ class QRNN(object):
                                 initializer=self.initializer)
             b = tf.get_variable('b', [self.num_convs*3],
                                 initializer=self.initializer)
-            # TODO make this multiplication by weight work
             Z_v, F_v, O_v = tf.split(1, 3, tf.matmul(h_t, V))
             if inputs is not None:
                 filter_shape = self._get_filter_shape(input_shape)
@@ -242,7 +241,6 @@ def init_encoder_and_decoder(num_encoder_symbols, num_decoder_symbols,
 
 def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
               output_projection, training, embeddings):
-    # TODO what do i do about output_projection
     # inputs are lists of placeholders, each one is shape [None]
     # self.enc_input_size = len(encoder_inputs)
     # self.dec_input_size = len(decoder_inputs)
@@ -253,7 +251,6 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
 
     # embed to be shape [batch_size, sequence_length, embed_size]
     embedded_enc_inputs = encoder.get_embeddings(embeddings, encoder_inputs)
-    # TODO put embeddings in a centralized location
     embedded_dec_inputs = decoder.get_embeddings(embeddings, decoder_inputs)
 
     for i in range(encoder.num_layers):
@@ -280,10 +277,5 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
         else:
             last_state = decoder.conv_with_attention(i, encode_outputs,
                                                      inputs, input_shape)
-    # if output_projection is not None:
-    #     return tf.split(last_state)
-    # else:
-    #     return decoder.transform_output(last_state)
+
     return tf.split(1, decoder.seq_length, last_state), None
-    return decoder.transform_output(tf.split(1, decoder.seq_length,
-                                             last_state)), None

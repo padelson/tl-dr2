@@ -312,6 +312,7 @@ class Summarizer(object):
                         step_iter = sess.run(tf.assign(self.bucket_step,
                                                        step_iter+1))
                     if bucket_index >= len(config.BUCKETS):
+                        end_while = True
                         bucket_index = sess.run(tf.assign(self.bucket_index,
                                                           0))
                     total_loss += step_loss
@@ -324,13 +325,12 @@ class Summarizer(object):
                         if iteration == 20 or iteration % 1000 == 0:
                             self.evaluate(sess, total_loss, iteration)
                     iteration += 1
-                    if bucket_index >= len(config.BUCKETS):
+                    if end_while:
                         break
                     if target != 0:
                         prog.update(get_epoch_iter(iteration, target),
                                     [("train loss", step_loss)])
                     else:
-                        print 'Iter', get_epoch_iter(iteration, target)
                         print 'Train loss', step_loss
 
             self.evaluate(sess, total_loss, iteration, test=True)

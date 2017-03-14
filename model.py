@@ -288,7 +288,6 @@ class Summarizer(object):
             sess.run(tf.global_variables_initializer())
             self._check_restore_parameters(sess, saver)
             iteration = self.global_step.eval()
-            total_loss = 0
             target = int(np.ceil(self.num_train_points /
                                  float(config.BATCH_SIZE))) - 1
             # cur_epoch = iteration / (target+1)
@@ -297,9 +296,11 @@ class Summarizer(object):
             step_iter = self.bucket_step.eval()
             print 'Starting at', iteration, cur_epoch, bucket_index, step_iter
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
+                total_loss = 0
                 sess.run(tf.assign(self.epoch, epoch))
                 print '\n', 'Epoch:', epoch+1
-                prog = utils.Progbar(target=target)
+                if target != 0:
+                    prog = utils.Progbar(target=target)
                 while True:
                     batch_data = data.get_batch(self.train_data, bucket_index,
                                                 config.BUCKETS,
@@ -317,6 +318,13 @@ class Summarizer(object):
                         step_iter = sess.run(tf.assign(self.bucket_step, 0))
                         bucket_index = sess.run(tf.assign(self.bucket_index,
                                                           bucket_index+1))
+                    else:
+                        step_iter = sess.run(tf.assign(self.bucket_step,
+                                                       step_iter+1))
+                    if bucket_index >= len(config.BUCKETS):
+                        end_while = True
+                        bucket_index = sess.run(tf.assign(self.bucket_index,
+                                                          0))
                     total_loss += step_loss
                     if bucket_index >= len(config.BUCKETS) or \
                        iteration == 20 or \
@@ -327,16 +335,18 @@ class Summarizer(object):
                         if iteration == 20 or iteration % 1000 == 0:
                             self.evaluate(sess, total_loss, iteration)
                     iteration += 1
-                    if bucket_index >= len(config.BUCKETS):
-                        bucket_index = sess.run(tf.assign(self.bucket_index,
-                                                          0))
+                    if target == 0:
+                        print 'Train loss', step_loss
+                    if end_while:
                         break
-                    step_iter = sess.run(tf.assign(self.bucket_step,
-                                                   step_iter+1))
-                    prog.update(get_epoch_iter(iteration, target),
-                                [("train loss", step_loss)])
+                    if target != 0:
+                        prog.update(get_epoch_iter(iteration, target),
+                                    [("train loss", step_loss)])
 
             self.evaluate(sess, total_loss, iteration, test=True)
+            saver.save(sess, os.path.join(self.checkpoint_path,
+                                          'summarizer'),
+                       global_step=iteration)
 
     def summarize(self, inputs):
         saver = tf.train.Saver()

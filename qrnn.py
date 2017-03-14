@@ -243,7 +243,7 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
     encode_outputs = []
     # pack inputs to be shape [sequence_length, batch_size]
     encoder_inputs = tf.transpose(tf.pack(encoder_inputs))
-    decoder_inputs = tf.trasnpose(tf.pack(decoder_inputs))
+    decoder_inputs = tf.transpose(tf.pack(decoder_inputs))
 
     # embed to be shape [batch_size, sequence_length, embed_size]
     embedded_enc_inputs = encoder.get_embeddings(encoder_inputs)

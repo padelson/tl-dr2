@@ -217,7 +217,7 @@ class QRNN(object):
 
     def transform_output(self, inputs):
         # input dim list of [batch, num_convs]
-        shape = (self.embedding_size, self.num_symbols)
+        shape = (self.num_convs, self.num_symbols)
         with tf.variable_scope('QRNN/Transform_output'):
             W = tf.get_variable('W', shape,
                                 initializer=self.initializer)

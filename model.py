@@ -101,7 +101,7 @@ class Summarizer(object):
         print 'Creating loss...  ',
         start = time.time()
         if config.NUM_SAMPLES > 0 and config.NUM_SAMPLES < self.dec_vocab:
-            w = tf.get_variable('proj_w', [config.HIDDEN_SIZE,
+            w = tf.get_variable('proj_w', [config.NUM_CONVS,
                                            self.dec_vocab])
             b = tf.get_variable('proj_b', [self.dec_vocab])
             self.output_projection = (w, b)

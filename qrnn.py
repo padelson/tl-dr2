@@ -113,7 +113,8 @@ class QRNN(object):
                                 initializer=self.initializer)
             b = tf.get_variable('b', [self.num_convs*3],
                                 initializer=self.initializer)
-            Z_v, F_v, O_v = tf.split(2, 3, tf.mul(h_t, V))
+            # TODO make this multiplication by weight work
+            Z_v, F_v, O_v = tf.split(2, 2, tf.matmul(h_t, V))
             if inputs is not None:
                 filter_shape = self._get_filter_shape(input_shape)
                 W = tf.get_variable('W', filter_shape,

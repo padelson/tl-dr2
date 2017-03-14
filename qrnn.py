@@ -198,12 +198,12 @@ class QRNN(object):
 
             # calculate attention
             enc_final_state = encode_outputs[-1]
-            C = tf.fill(tf.shape(Z), 0.0)
-            H = tf.fill(tf.shape(Z), 0.0)
+            H = [tf.fill(tf.pack([tf.shape(Z)[0], 1, tf.shape(Z)[2]]), 0.0)]
+            C = [tf.fill(tf.pack([tf.shape(Z)[0], 1, tf.shape(Z)[2]]), 0.0)]
             for i in range(1, self.seq_length):
-                c_i = tf.mul(F[:, i, :], C[:, i-1, :]) + \
+                c_i = tf.mul(F[:, i, :], C[-1]) + \
                       tf.mul(1-F[:, i, :], Z[:, i, :])
-                C[:, i, :] = c_i
+                C.append(c_i)
                 # C_i dim [batch, 1, num_convs]
                 # enc_final_state dim [batch, seq_len, num_convs]
                 c_dot_h = tf.reduce_sum(tf.mul(c_i, enc_final_state), axis=2)
@@ -212,8 +212,8 @@ class QRNN(object):
                 k_t = tf.mul(alpha, enc_final_state)
                 h_i = tf.mul(O[:, i, :], (tf.matmul(k_t, W_k) +
                                           tf.matmul(c_i, W_c)+b_o))
-                H[:, i, :] = h_i
-            return H
+                H.append(tf.squeeze(h_i)
+            return tf.reshape(tf.pack(H), tf.shape(Z))
 
     def transform_output(self, inputs):
         # input dim [batch, seq_len, num_convs]

@@ -217,8 +217,7 @@ class QRNN(object):
                 y = tf.matmul(c_i, W_c)+b_o
                 h_i = tf.mul(O[:, i, :], x2+y)
                 H.append(tf.squeeze(h_i))
-                result = tf.reshape(tf.pack(H), tf.shape(Z))
-            return tf.Print(result, [tf.shape(result), tf.shape(tf.pack(H)), tf.shape(x2), tf.shape(y), tf.shape(h_i), tf.shape(O[:, i, :])])
+            return tf.reshape(tf.pack(H), tf.shape(Z))
 
     def transform_output(self, inputs):
         # input dim list of [batch, num_convs]

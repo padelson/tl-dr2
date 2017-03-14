@@ -217,18 +217,16 @@ class QRNN(object):
 
     def transform_output(self, inputs):
         # input dim list of [batch, num_convs]
-        shape = (self.embedding_size, self.num_symbols)
+        shape = (self.embedding_size, self.num_symbols-1)
         with tf.variable_scope('QRNN/Transform_output'):
             W = tf.get_variable('W', shape,
                                 initializer=self.initializer)
-            b = tf.get_variable('b', [self.num_symbols],
+            b = tf.get_variable('b', [self.num_symbols-1],
                                 initializer=self.initializer)
             # TODO: do efficiently
             result = []
             for i in inputs:
                 result.append(tf.nn.xw_plus_b(i, W, b))
-                sess = tf.Session()
-                tf.shape(result[-1]).eval(session=sess)
         return result
 
 

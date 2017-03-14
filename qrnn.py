@@ -27,8 +27,8 @@ class QRNN(object):
         # Z, F, O dims: [batch_size, sequence_length, num_convs]
         # H = tf.fill(tf.shape(Z), 0.0)
         # C = tf.fill(tf.shape(Z), 0.0)
-        H = []
-        C = []
+        H = [tf.fill(tf.pack([tf.shape(Z)[0], 1, tf.shape(Z)[2]]), 0.0)]
+        C = [tf.fill(tf.pack([tf.shape(Z)[0], 1, tf.shape(Z)[2]]), 0.0)]
         for i in range(1, self.seq_length):
             c_i = tf.mul(F[:, i, :], C[-1]) + \
                          tf.mul(1-F[:, i, :], Z[:, i, :])

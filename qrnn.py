@@ -216,18 +216,17 @@ class QRNN(object):
             return tf.reshape(tf.pack(H), tf.shape(Z))
 
     def transform_output(self, inputs):
-        # input dim [batch, seq_len, num_convs]
-        shape = (inputs.shape[2], self.num_decoder_symbols)
+        # input dim list of [batch, num_convs]
+        shape = (self.embedding_size, self.num_symbols)
         with tf.variable_scope('QRNN/Transform_output'):
             W = tf.get_variable('W', shape,
                                 initializer=self.initializer)
             b = tf.get_variable('b', [self.num_decoder_symbols],
                                 initializer=self.initializer)
             # TODO: do efficiently
-            result = np.zeros(inputs.shape[:2] + [self.num_decoder_symbols])
-            for i in range(inputs.shape[0]):
-                input_i = inputs[i, :, :]
-                result[i, :, :] = tf.nn.xw_plus_b(input_i, W, b)
+            result = []
+            for i in inputs:
+                result.append(tf.nn.xw_plus_b(i, W, b))
         return result
 
 
@@ -281,7 +280,9 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
         else:
             last_state = decoder.conv_with_attention(i, encode_outputs,
                                                      inputs, input_shape)
-    if output_projection is not None:
-        return last_state
-    else:
-        return decoder.transform_output(last_state)
+    # if output_projection is not None:
+    #     return tf.split(last_state)
+    # else:
+    #     return decoder.transform_output(last_state)
+    return decoder.transform_output(tf.split(1, decoder.seq_length,
+                                             last_state))

@@ -227,7 +227,7 @@ class QRNN(object):
             result = []
             for i in inputs:
                 # result.append(tf.nn.xw_plus_b(i, W, b))
-                result.append(tf.constant(np.random.rand(5,5)))
+                result.append(tf.constant(np.ones((5,5)))
         return result
 
 

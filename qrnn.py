@@ -247,7 +247,7 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
 
     # embed to be shape [batch_size, sequence_length, embed_size]
     embedded_enc_inputs = encoder.get_embeddings(encoder_inputs)
-    embedded_dec_inputs = decoder.get_embeddings(decoder_inputs)
+    embedded_dec_inputs = encoder.get_embeddings(decoder_inputs)  # TODO no cheat
 
     for i in range(encoder.num_layers):
         inputs = embedded_enc_inputs if i == 0 else encode_outputs[-1]

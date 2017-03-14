@@ -25,14 +25,18 @@ class QRNN(object):
 
     def fo_pool(self, Z, F, O):
         # Z, F, O dims: [batch_size, sequence_length, num_convs]
-        H = tf.fill(tf.shape(Z), 0.0)
-        C = tf.fill(tf.shape(Z), 0.0)
+        # H = tf.fill(tf.shape(Z), 0.0)
+        # C = tf.fill(tf.shape(Z), 0.0)
+        H = []
+        C = []
         for i in range(1, self.seq_length):
-            C[:, i, :] = tf.mul(F[:, i, :], C[:, i-1, :]) + \
+            c_i = tf.mul(F[:, i, :], C[:, i-1, :]) + \
                          tf.mul(1-F[:, i, :], Z[:, i, :])
-            H[:, i, :] = tf.mul(O[:, i, :], C[:, i, :])
+            # C[:, i, :] = c_i
+            C.append(c_i)
+            H.append(tf.mul(O[:, i, :], c_i))
         # i think we want output [batch, seq_len, num_convs]
-        return H
+        return tf.pack(H)
 
     def f_pool(self, Z, F, sequence_length):
         # Z, F dims: [batch_size, sequence_length, num_convs]

@@ -307,6 +307,12 @@ class Summarizer(object):
                         step_iter = sess.run(tf.assign(self.bucket_step, 0))
                         bucket_index = sess.run(tf.assign(self.bucket_index,
                                                           bucket_index+1))
+                    else:
+                        step_iter = sess.run(tf.assign(self.bucket_step,
+                                                       step_iter+1))
+                    if bucket_index >= len(config.BUCKETS):
+                        bucket_index = sess.run(tf.assign(self.bucket_index,
+                                                          0))
                     total_loss += step_loss
                     if bucket_index >= len(config.BUCKETS) or \
                        iteration == 20 or \
@@ -318,11 +324,7 @@ class Summarizer(object):
                             self.evaluate(sess, total_loss, iteration)
                     iteration += 1
                     if bucket_index >= len(config.BUCKETS):
-                        bucket_index = sess.run(tf.assign(self.bucket_index,
-                                                          0))
                         break
-                    step_iter = sess.run(tf.assign(self.bucket_step,
-                                                   step_iter+1))
                     prog.update(get_epoch_iter(iteration, target),
                                 [("train loss", step_loss)])
 

@@ -284,6 +284,6 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
     #     return tf.split(last_state)
     # else:
     #     return decoder.transform_output(last_state)
-    return tf.split(1, decoder.seq_length, last_state), _
+    return tf.split(1, decoder.seq_length, last_state), None
     return decoder.transform_output(tf.split(1, decoder.seq_length,
                                              last_state)), None

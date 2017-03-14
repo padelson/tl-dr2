@@ -33,10 +33,10 @@ class QRNN(object):
             c_i = tf.mul(F[:, i, :], C[-1]) + \
                          tf.mul(1-F[:, i, :], Z[:, i, :])
             # C[:, i, :] = c_i
-            C.append(c_i)
+            C.append(tf.Print(c_i, [tf.shape(c_i)]))
             h_i = tf.mul(O[:, i, :], c_i)
             # H[:, i, :] = h_i
-            H.append(tf.Print(tf.squeeze(h_i), [tf.shape(h_i)]))
+            H.append(tf.squeeze(h_i))
         # i think we want output [batch, seq_len, num_convs]
         return tf.reshape(tf.pack(H), tf.shape(Z))
 

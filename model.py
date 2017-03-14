@@ -12,10 +12,10 @@ from qrnn import QRNN
 
 
 class Summarizer(object):
-    def _seq_f(self, encoder_inputs, decoder_inputs, do_decode, bucket):
+    def _seq_f(self, encoder_inputs, decoder_inputs, do_decode):
         qrnn = QRNN(self.enc_vocab, self.dec_vocab, config.BATCH_SIZE,
-                    config.HIDDEN_SIZE, bucket[0], bucket[1],
-                    config.NUM_LAYERS, config.CONV_SIZE, config.NUM_CONVS)
+                    config.HIDDEN_SIZE, config.NUM_LAYERS, config.CONV_SIZE,
+                    config.NUM_CONVS)
         # TODO output projection
         return qrnn.seq2seq_f(encoder_inputs, decoder_inputs,
                               output_projection=self.output_projection,
@@ -76,8 +76,6 @@ class Summarizer(object):
         self.decoder_masks = []
         self.training_placeholder = tf.placeholder(tf.bool, shape=[],
                                                    name='training')
-        self.bucket_placeholder = tf.placeholder(tf.int32, shape=[2, ],
-                                                 name='bucket')
         for i in xrange(config.BUCKETS[-1][0]):  # Last bucket is the biggest.
             self.encoder_inputs.append(tf.placeholder(tf.int32, shape=[None],
                                        name='encoder{}'.format(i)))
@@ -113,15 +111,13 @@ class Summarizer(object):
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
         training = self.training_placeholder
-        bucket = self.bucket_placeholder
         self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
                                     self.encoder_inputs,
                                     self.decoder_inputs,
                                     self.targets,
                                     self.decoder_masks,
                                     config.BUCKETS,
-                                    lambda x, y: self._seq_f(x, y, training,
-                                                             bucket),
+                                    lambda x, y: self._seq_f(x, y, training),
                                     softmax_loss_function=self.softmax_loss
                                     )
         # If we use output projection, we need to project outputs for decoding.
@@ -202,7 +198,6 @@ class Summarizer(object):
         last_target = self.decoder_inputs[decoder_size].name
         input_feed[last_target] = np.zeros([config.BATCH_SIZE], dtype=np.int32)
         input_feed[self.training_placeholder] = not update_params
-        input_feed[self.bucket_placeholder] = config.BUCKETS[bucket_id]
         # output feed: depends on whether we do a backward step or not.
         if update_params:
             output_feed = [self.train_ops[bucket_id],  # update that does SGD.

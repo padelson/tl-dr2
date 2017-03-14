@@ -4,14 +4,11 @@ import tensorflow as tf
 
 class QRNN(object):
     def __init__(self, num_encoder_symbols, num_decoder_symbols, batch_size,
-                 embedding_size, enc_input_size, dec_input_size,
-                 num_layers, conv_size, num_convs):
+                 embedding_size, num_layers, conv_size, num_convs):
         self.num_encoder_symbols = num_encoder_symbols
         self.num_decoder_symbols = num_decoder_symbols
         self.batch_size = batch_size
         self.embedding_size = embedding_size
-        self.enc_input_size = enc_input_size
-        self.dec_input_size = dec_input_size
         self.encode_layers = num_layers
         self.decode_layers = num_layers
         self.conv_size = conv_size
@@ -34,7 +31,7 @@ class QRNN(object):
                          tf.mul(1-F[:, i, :], Z[:, i, :])
             H[:, i, :] = tf.mul(O[:, i, :], C[:, i, :])
         # i think we want output [batch, seq_len, num_convs]
-        return np.array(H)
+        return H
 
     def f_pool(self, Z, F, sequence_length):
         # Z, F dims: [batch_size, sequence_length, num_convs]
@@ -57,7 +54,7 @@ class QRNN(object):
     # in_width = embedding_size
     # filter_width = embedding_size
 
-    def conv_layer(self, layer_id, inputs, input_shape, sequence_length):
+    def conv_layer(self, layer_id, inputs, input_shape):
         with tf.variable_scope("QRNN/Variable/Convolution/"+str(layer_id)):
             filter_shape = self._get_filter_shape(input_shape)
             W = tf.get_variable('W', filter_shape,
@@ -100,39 +97,46 @@ class QRNN(object):
             Z, F, O = tf.split(1, 3, result)
             return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
 
-    def conv_with_encode_output(self, layer_id, h_t, inputs=None):
+    def conv_with_encode_output(self, layer_id, h_t, inputs=None,
+                                input_shape=None, pool=True):
+        pooling = self.fo_pool if pool else lambda x, y, z: return x, y , z
         with tf.variable_scope("QRNN/Variable/Conv_w_enc_out/"+str(layer_id)):
             v_shape = (self.num_convs, self.num_convs*3)
-            if inputs is not None:
-                filter_shape = self._get_filter_shape(inputs.shape[2])
-                W = tf.get_variable('W', filter_shape,
-                                    initializer=self.initializer)
             V = tf.get_variable('V', v_shape,
                                 initializer=self.initializer)
             b = tf.get_variable('b', [self.num_convs*3],
                                 initializer=self.initializer)
-            num_pads = self.conv_size - 1
-            # input dims ~should~ now be [batch_size, sequence_length,
-            #                             embedding_size, 1]
-            padded_input = tf.pad(tf.expand_dims(inputs, -1),
-                                  [[0, 0], [num_pads, 0],
-                                   [0, 0], [0, 0]],
-                                  "CONSTANT")
-            conv = tf.nn.conv2d(
-                padded_input,
-                W,
-                strides=[1, 1, 1, 1],
-                padding="VALID",
-                name="conv") + b
-            # conv dims: [batch_size, sequence_length,
-            #             1, num_convs*3]
-            # squeeze out 3rd D
-            # split 4th (now 3rd) dim into 3
-            Z_conv, F_conv, O_conv = tf.split(2, 3, tf.squeeze(conv))
             Z_v, F_v, O_v = tf.split(2, 3, tf.matmul(h_t, V))
-            return self.fo_pool(tf.tanh(Z_conv - Z_v),
-                                tf.sigmoid(F_conv - F_v),
-                                tf.sigmoid(O_conv - O_v))
+            if inputs is not None:
+                filter_shape = self._get_filter_shape(input_shape)
+                W = tf.get_variable('W', filter_shape,
+                                    initializer=self.initializer)
+
+                num_pads = self.conv_size - 1
+                # input dims ~should~ now be [batch_size, sequence_length,
+                #                             embedding_size, 1]
+                padded_input = tf.pad(tf.expand_dims(inputs, -1),
+                                      [[0, 0], [num_pads, 0],
+                                       [0, 0], [0, 0]],
+                                      "CONSTANT")
+                conv = tf.nn.conv2d(
+                    padded_input,
+                    W,
+                    strides=[1, 1, 1, 1],
+                    padding="VALID",
+                    name="conv") + b
+                # conv dims: [batch_size, sequence_length,
+                #             1, num_convs*3]
+                # squeeze out 3rd D
+                # split 4th (now 3rd) dim into 3
+                Z_conv, F_conv, O_conv = tf.split(2, 3, tf.squeeze(conv))
+                return pooling(tf.tanh(Z_conv + Z_v),
+                               tf.sigmoid(F_conv + F_v),
+                               tf.sigmoid(O_conv + O_v))
+            else:
+                return pooling(tf.tanh(Z_v),
+                               tf.sigmoid(F_v),
+                               tf.sigmoid(O_v))
 
     def linear_with_encode_output(self, layer_id, h_t, inputs=None):
         # input dim [batch, seq_len, num_convs or embedding_size]
@@ -168,10 +172,9 @@ class QRNN(object):
         #     return self.fo_pool(tf.tanh(Z), tf.sigmoid(F), tf.sigmoid(O))
         pass
 
-    def conv_with_attention(self, encode_outputs, inputs):
+    def conv_with_attention(self, layer_id, encode_outputs, inputs, input_shape):
         # input dim [batch, seq_len, num_convs]
         with tf.variable_scope('QRNN/Conv_with_attention/'):
-            filter_shape = self._get_filter_shape(inputs.shape[2])
             attn_weight_shape = [self.num_convs, self.num_convs]
 
             W_k = tf.get_variable('W_k', attn_weight_shape,
@@ -180,34 +183,10 @@ class QRNN(object):
                                   initializer=self.initializer)
             b_o = tf.get_variable('b_o', [self.num_convs],
                                   initializer=self.initializer)
-            W_conv = tf.get_variable('W_conv', filter_shape,
-                                     initializer=self.initializer)
-            b = tf.get_variable('b_conv', [self.num_convs*3],
-                                initializer=self.initializer)
 
-            num_pads = self.conv_size - 1
-            # input dims ~should~ now be [batch_size, sequence_length,
-            #                             num_convs, 1]
-            padded_input = tf.pad(tf.expand_dims(inputs, -1),
-                                  [[0, 0], [num_pads, 0],
-                                   [0, 0], [0, 0]],
-                                  "CONSTANT")
-            conv = tf.nn.conv2d(
-                padded_input,
-                W_conv,
-                strides=[1, 1, 1, 1],
-                padding="VALID",
-                name="conv") + b
-            # conv dims: [batch_size, sequence_length,
-            #             1, num_convs*3]
-            # squeeze out 3rd D
-            # split 4th (now 3rd) dim into 3
-            Z, F, O = tf.split(2, 3, tf.squeeze(conv))
-
-            # do normal conv with encode_output
-            Z = tf.tanh(Z)
-            F = tf.sigmoid(F)
-            O = tf.sigmoid(O)
+            h_t = tf.squeeze(encode_outputs[-1][:, -1, :])
+            Z, F, O = self.conv_with_encode_output(layer_id, h_t, inputs,
+                                                   input_shape, pool=False)
 
             # calculate attention
             enc_final_state = encode_outputs[-1]
@@ -248,10 +227,16 @@ class QRNN(object):
     def seq2seq_f(self, encoder_inputs, decoder_inputs,
                   output_projection=None, training=False):
         # TODO what do i do about output_projection
+        # inputs are lists of placeholders, each one is shape [None]
+        self.enc_input_size = len(encoder_inputs)
+        self.dec_input_size = len(decoder_inputs)
         encode_outputs = []
-        encoder_inputs = tf.pack(encoder_inputs)
-        decoder_inputs = tf.pack(decoder_inputs)
-        embedded_inputs = tf.pack(self.get_embeddings(encoder_inputs))
+        # pack inputs to be shape [sequence_length, batch_size]
+        encoder_inputs = tf.transpose(tf.pack(encoder_inputs))
+        decoder_inputs = tf.trasnpose(tf.pack(decoder_inputs))
+
+        # embed to be shape [batch_size, sequence_length, embed_size]
+        embedded_inputs = self.get_embeddings(encoder_inputs)
 
         for i in range(self.encode_layers):
             inputs = embedded_inputs if i == 0 else encode_outputs[-1]
@@ -263,7 +248,7 @@ class QRNN(object):
             # list index i of dim [batch, seq_len, state_size]
             enc_out = tf.squeeze(encode_outputs[i][:, -1, :])
             # TODO what do you feed in during decode lol
-            if not training:
+            if not training: # work with placeholder
                 decoder_inputs = None
             is_last_layer = i == (self.decode_layers - 1)
             if not is_last_layer:

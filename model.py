@@ -8,7 +8,7 @@ import config
 import data
 import utils
 
-from qrnn import, init_encoder_and_decoder, seq2seq_f
+from qrnn import init_encoder_and_decoder, seq2seq_f
 
 
 class Summarizer(object):

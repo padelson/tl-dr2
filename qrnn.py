@@ -17,7 +17,7 @@ class QRNN(object):
     def get_embeddings(self, word_ids):
         if word_ids is None:
             return None
-        with tf.variable_scope('QRNN/embeddings'):
+        with tf.variable_scope('QRNN/embeddings', reuse=True):
             W = tf.get_variable('W', [self.num_symbols,
                                       self.embedding_size],
                                 initializer=self.initializer)

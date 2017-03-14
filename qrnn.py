@@ -208,7 +208,7 @@ class QRNN(object):
                 C.append(c_i)
                 # C_i dim [batch, num_convs]
                 # enc_final_state dim [batch, seq_len, num_convs]
-                c_dot_h = tf.reduce_sum(tf.mul(tf.expand(c_i, 1), enc_final_state), axis=2)
+                c_dot_h = tf.reduce_sum(tf.mul(tf.expand_dims(c_i, 1), enc_final_state), axis=2)
                 # alpha dim [batch, seq_len]
                 alpha = tf.nn.softmax(c_dot_h)
                 k_t = tf.mul(alpha, enc_final_state)

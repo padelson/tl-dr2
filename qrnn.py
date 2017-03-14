@@ -268,7 +268,7 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
         # TODO what do you feed in during decode lol
         inputs = embedded_dec_inputs if i == 0 else decode_outputs[-1]
         input_shape = decoder.embedding_size if i == 0 else decoder.num_convs
-        inputs, input_shape = tf.cond(True, lambda: (inputs, input_shape),
+        inputs, input_shape = tf.cond(tf.constant(True), lambda: (inputs, input_shape),
                                       lambda: (None, None))
         is_last_layer = i == (decoder.num_layers - 1)
         if not is_last_layer:

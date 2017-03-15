@@ -3,7 +3,7 @@ import tensorflow as tf
 
 def get_input_from_state(state, embeddings, output_projection):
     vocab = tf.nn.xw_plus_b(state, output_projection[0], output_projection[1])
-    return tf.nn.embedding_lookup(embeddings, tf.arg_max(vocab))
+    return tf.nn.embedding_lookup(embeddings, tf.arg_max(vocab, axis=1))
 
 
 def advance_step_input(step_input, new_input):
@@ -45,7 +45,7 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                                 layer_inputs[j],
                                 decoder.num_convs,
                                 seq_len=decoder.conv_size)
-                    H.append(h_t)
+                    H.append(h_t[:, -1:, :])
                     layer_outputs[j] = c_t
             else:
                 if j < decoder.num_layers-1:

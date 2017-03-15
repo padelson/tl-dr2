@@ -158,7 +158,7 @@ class QRNN(object):
                         padding="VALID",
                         name="conv") + b
                     # after squeeze, dim = [batch, num_convs*3]
-                    z_t, f_t, o_t = tf.split(1, 3, tf.sqeeuze(conv)+h_tV)
+                    z_t, f_t, o_t = tf.split(1, 3, tf.squeeze(conv)+h_tV)
                     Z.append(z_t)
                     F.append(f_t)
                     O.append(o_t)

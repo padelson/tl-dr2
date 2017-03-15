@@ -24,10 +24,10 @@ class Summarizer(object):
                                                     config.HIDDEN_SIZE,
                                                     config.NUM_LAYERS,
                                                     config.CONV_SIZE,
-                                                    config.NUM_CONVS
+                                                    config.NUM_CONVS,
                                                     self.output_projection)
         return seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
-                         self.output_projection, do_decode, self.embeddings)
+                         do_decode, self.embeddings)
 
     def _construct_seq(self, output_logits):
         output_logits = np.array(output_logits)

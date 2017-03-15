@@ -260,7 +260,8 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
         inputs = embedded_enc_inputs if i == 0 else encode_outputs[-1]
         input_shape = encoder.embedding_size if i == 0 else encoder.num_convs
         encode_outputs.append(encoder.conv_layer(i, inputs, input_shape))
-
+    encode_outputs = [tf.reverse(e, [False, True, False])
+                      for e in encode_outputs]
     decoder_inputs = tf.transpose(tf.pack(decoder_inputs))
     embedded_dec_inputs = decoder.get_embeddings(embeddings, decoder_inputs)
     decode_outputs = []

@@ -328,6 +328,6 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
     def dec_eval():
         return decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                                embeddings)
-    result = tf.cond(training, dec_train, dec_eval)
+    result = tf.cond(training, dec_eval, dec_train)
     return [tf.squeeze(x) for x in
             tf.split(1, decoder.seq_length, result)], None

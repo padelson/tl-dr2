@@ -146,7 +146,7 @@ class QRNN(object):
                                                     self.output_projection[0],
                                                     self.output_projection[1])
                     new_input = tf.expand_dims(new_input, 1)
-                    new_input = tf.expand_dims(new_input, -1)
+                    new_input = tf.Print(tf.expand_dims(new_input, -1), [tf.shape(new_input), tf.shape(temp_input)])
                     temp_input = tf.concat([temp_input, new_input],
                                            1)
                     temp_input = temp_input[:, 1:, :, :]

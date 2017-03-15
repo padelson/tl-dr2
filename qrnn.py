@@ -139,6 +139,7 @@ class QRNN(object):
                 temp_input = tf.fill(temp_input_size, 0.0)
                 Z, F, O, C, H = [[]] * 5
                 for i in range(self.seq_length):
+                    print i
                     if i == 0:
                         new_input = inputs[:, 0, :]  # dims [batch, embed]
                     else:

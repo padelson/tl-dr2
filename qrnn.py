@@ -181,6 +181,9 @@ class QRNN(object):
                             input_shape, seq_len=None):
         if seq_len is None:
             seq_len = self.seq_length
+        h_t = tf.squeeze(encode_outputs[-1][:, -1, :])
+        Z, F, O = self.conv_with_encode_output(layer_id, h_t, inputs,
+                                               input_shape, pool=False)
         # input dim [batch, seq_len, num_convs]
         with tf.variable_scope('QRNN/'+self.name +
                                '/Conv_with_attention/', reuse=True):
@@ -192,10 +195,6 @@ class QRNN(object):
                                   initializer=self.initializer)
             b_o = tf.get_variable('b_o', [self.num_convs],
                                   initializer=self.initializer)
-
-            h_t = tf.squeeze(encode_outputs[-1][:, -1, :])
-            Z, F, O = self.conv_with_encode_output(layer_id, h_t, inputs,
-                                                   input_shape, pool=False)
 
             # calculate attention
             enc_final_state = encode_outputs[-1]

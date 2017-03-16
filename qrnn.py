@@ -47,6 +47,7 @@ class QRNN(object):
         self.num_convs = num_convs
         self.output_projection = output_projection
         self.initializer = tf.random_normal_initializer()
+        self._init_vars()
 
     def get_embeddings(self, embeddings, word_ids):
         if word_ids is None:

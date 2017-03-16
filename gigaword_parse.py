@@ -180,7 +180,7 @@ def build_vocab():
     vecs, top10000 = get_vecs(top20000, 10000)
     with open('embeddings.txt', 'w') as embeddings_f:
         embeddings_f.write(json.dumps(vecs))
-    for words in top10000:
+    for entry in top10000:
         enc.write(entry + '\n')
         dec.write(entry + '\n')
     write(out, dist)

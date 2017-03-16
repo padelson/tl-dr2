@@ -132,11 +132,13 @@ class Summarizer(object):
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
         if self.model == 'qrnn':
+            embed_init = tf.contrib.layers.xavier_initializer()
             if self.pretrained:
-                embeddings = data.load_embeddings(self.data_path)
-                self.embeddings = tf.constant(embeddings)
+                pad = tf.constant(np.zeros(config.HIDDEN_SIZE))
+                flags = tf.Variable(embed_init([3, config.HIDDEN_SIZE]))
+                embeddings = tf.constant(data.load_embeddings(self.data_path))
+                self.embeddings = tf.concat(1, [pad, flags, embeddings])
             else:
-                embed_init = tf.contrib.layers.xavier_initializer()
                 self.embeddings = tf.Variable(embed_init([self.enc_vocab,
                                                           config.HIDDEN_SIZE]))
         feed_prev = self.feed_prev_placeholder

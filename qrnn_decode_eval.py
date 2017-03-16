@@ -20,6 +20,7 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
     layer_inputs = {}
     layer_outputs = {}
     for i in range(decoder.seq_length):
+        print 'seq', i
         if i == 0:
             step_input = tf.fill([decoder.batch_size, decoder.conv_size,
                                   decoder.embedding_size], 0.0)
@@ -33,6 +34,7 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
         step_input = advance_step_input(step_input, new_input)
 
         for j in range(decoder.num_layers):
+            print 'layer', j
             enc_out = tf.squeeze(encode_outputs[j][:, -1, :])
             if i == 0:
                 if j < decoder.num_layers-1:

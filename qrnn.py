@@ -14,29 +14,29 @@ class QRNN(object):
                                    reuse=False):
                 filter_shape = self._get_filter_shape(input_shape)
                 tf.get_variable('W', filter_shape,
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
                 tf.get_variable('b', [self.num_convs*3],
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
             with tf.variable_scope("QRNN/"+self.name +
                                    "/Variable/Conv_w_enc_out/"+str(i),
                                    reuse=False):
                 v_shape = (self.num_convs, self.num_convs*3)
                 tf.get_variable('V', v_shape,
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
                 tf.get_variable('b', [self.num_convs*3],
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
                 filter_shape = self._get_filter_shape(input_shape)
                 tf.get_variable('W', filter_shape,
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
         with tf.variable_scope('QRNN/'+self.name +
                                '/Conv_with_attention/', reuse=False):
             attn_weight_shape = [self.num_convs, self.num_convs]
             tf.get_variable('W_k', attn_weight_shape,
-                            initializer=self.initializer)
+                            initializer=self.initializer, dtype=tf.float32)
             tf.get_variable('W_c', attn_weight_shape,
-                            initializer=self.initializer)
+                            initializer=self.initializer, dtype=tf.float32)
             tf.get_variable('b_o', [self.num_convs],
-                            initializer=self.initializer)
+                            initializer=self.initializer, dtype=tf.float32)
 
     def __init__(self, num_symbols, batch_size, seq_length,
                  embedding_size, num_layers, conv_size, num_convs,
@@ -56,10 +56,6 @@ class QRNN(object):
     def get_embeddings(self, embeddings, word_ids):
         if word_ids is None:
             return None
-        # with tf.variable_scope('QRNN/embeddings', reuse=True):
-        #     W = tf.get_variable('W', [self.num_symbols,
-        #                               self.embedding_size],
-        #                         initializer=self.initializer)
         return tf.nn.embedding_lookup(embeddings, word_ids)
 
     def fo_pool(self, Z, F, O, seq_len=None, c_prev=None):
@@ -124,9 +120,9 @@ class QRNN(object):
                                reuse=True):
             filter_shape = self._get_filter_shape(input_shape)
             W = tf.get_variable('W', filter_shape,
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
             b = tf.get_variable('b', [self.num_convs*3],
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
             num_pads = self.conv_size - 1
             # input dims ~should~ now be [batch_size, sequence_length,
             #                             embedding_size, 1]
@@ -158,13 +154,13 @@ class QRNN(object):
                                reuse=True):
             v_shape = (self.num_convs, self.num_convs*3)
             V = tf.get_variable('V', v_shape,
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
             b = tf.get_variable('b', [self.num_convs*3],
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
 
             filter_shape = self._get_filter_shape(input_shape)
             W = tf.get_variable('W', filter_shape,
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
 
             num_pads = self.conv_size - 1
             h_tV = tf.matmul(h_t, V)
@@ -205,11 +201,14 @@ class QRNN(object):
             attn_weight_shape = [self.num_convs, self.num_convs]
 
             W_k = tf.get_variable('W_k', attn_weight_shape,
-                                  initializer=self.initializer)
+                                  initializer=self.initializer,
+                                  dtype=tf.float32)
             W_c = tf.get_variable('W_c', attn_weight_shape,
-                                  initializer=self.initializer)
+                                  initializer=self.initializer,
+                                  dtype=tf.float32)
             b_o = tf.get_variable('b_o', [self.num_convs],
-                                  initializer=self.initializer)
+                                  initializer=self.initializer,
+                                  dtype=tf.float32)
 
             # calculate attention
             enc_final_state = encode_outputs[-1]
@@ -238,9 +237,9 @@ class QRNN(object):
         shape = (self.num_convs, self.num_symbols)
         with tf.variable_scope('QRNN/'+self.name+'/Transform_output'):
             W = tf.get_variable('W', shape,
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
             b = tf.get_variable('b', [self.num_symbols],
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
             # TODO: do efficiently
             result = []
             for i in inputs:
@@ -257,13 +256,13 @@ class QRNN(object):
                                reuse=True):
             v_shape = (self.num_convs, self.num_convs*3)
             V = tf.get_variable('V', v_shape,
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
             b = tf.get_variable('b', [self.num_convs*3],
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
 
             filter_shape = self._get_filter_shape(input_shape)
             W = tf.get_variable('W', filter_shape,
-                                initializer=self.initializer)
+                                initializer=self.initializer, dtype=tf.float32)
 
             h_tV = tf.matmul(h_t, V)
             Z_v, F_v, O_v = tf.split(1, 3, h_tV)
@@ -298,11 +297,14 @@ class QRNN(object):
             attn_weight_shape = [self.num_convs, self.num_convs]
 
             W_k = tf.get_variable('W_k', attn_weight_shape,
-                                  initializer=self.initializer)
+                                  initializer=self.initializer,
+                                  dtype=tf.float32)
             W_c = tf.get_variable('W_c', attn_weight_shape,
-                                  initializer=self.initializer)
+                                  initializer=self.initializer,
+                                  dtype=tf.float32)
             b_o = tf.get_variable('b_o', [self.num_convs],
-                                  initializer=self.initializer)
+                                  initializer=self.initializer,
+                                  dtype=tf.float32)
 
             # calculate attention
             enc_final_state = encode_outputs[-1]

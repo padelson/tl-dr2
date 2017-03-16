@@ -134,13 +134,15 @@ class Summarizer(object):
         if self.model == 'qrnn':
             embed_init = tf.contrib.layers.xavier_initializer()
             if self.pretrained:
-                pad = tf.constant(np.zeros(config.HIDDEN_SIZE))
-                flags = tf.Variable(embed_init([3, config.HIDDEN_SIZE]))
+                pad = tf.zeros([config.HIDDEN_SIZE])
+                flags = tf.Variable(embed_init([3, config.HIDDEN_SIZE],
+                                    dtype=tf.float32))
                 embeddings = tf.constant(data.load_embeddings(self.data_path))
                 self.embeddings = tf.concat(1, [pad, flags, embeddings])
             else:
                 self.embeddings = tf.Variable(embed_init([self.enc_vocab,
-                                                          config.HIDDEN_SIZE]))
+                                                          config.HIDDEN_SIZE]),
+                                              dtype=tf.float32)
         feed_prev = self.feed_prev_placeholder
         self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
                                     self.encoder_inputs,

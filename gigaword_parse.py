@@ -242,8 +242,8 @@ def find_dist():
 
 start_time = time.time()
 #test()
-makeDirs()
-ostest()
+# makeDirs()
+# ostest()
 build_vocab()
 #find_dist()
 #ostest()

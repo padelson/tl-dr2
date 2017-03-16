@@ -74,7 +74,7 @@ class Summarizer(object):
 
     def _setup_sess_dir(self):
         print 'Setting up directory for session'
-        self.sess_dir = self.sess_name
+        self.sess_dir = os.path.join('/datadrive', self.sess_name)
         data.make_dir(self.sess_dir)
 
     def _setup_checkpoints(self):
@@ -306,8 +306,10 @@ class Summarizer(object):
             sess.run(tf.global_variables_initializer())
             self._check_restore_parameters(sess, saver)
             iteration = self.global_step.eval()
-            target = int(np.ceil(self.num_train_points /
-                                 float(config.BATCH_SIZE))) - 1
+            # target = int(np.ceil(self.num_train_points /
+            #                      float(config.BATCH_SIZE))) - 1
+            target = sum([int(np.ceil(len(v['dec_input']) for k, v
+                          in self.train_data))])
             # cur_epoch = iteration / (target+1)
             cur_epoch = self.epoch.eval()
             bucket_index = self.bucket_index.eval()
@@ -322,6 +324,7 @@ class Summarizer(object):
                     prog = utils.Progbar(target=target)
                 end_while = False
                 while True:
+                    batch_start = time.time()
                     batch_data = data.get_batch(self.train_data, bucket_index,
                                                 config.BUCKETS,
                                                 config.BATCH_SIZE,
@@ -362,7 +365,9 @@ class Summarizer(object):
                         break
                     if target != 0:
                         prog.update(get_epoch_iter(iteration, target),
-                                    [("train loss", step_loss)])
+                                    [("train loss", step_loss),
+                                     ('batch runtime',
+                                      time.time() - batch_start)])
 
             self.evaluate(sess, total_losses, iteration, test=True)
             saver.save(sess, os.path.join(self.checkpoint_path,

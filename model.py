@@ -302,6 +302,7 @@ class Summarizer(object):
                 print '\n', 'Epoch:', epoch+1
                 if target != 0:
                     prog = utils.Progbar(target=target)
+                end_while = False
                 while True:
                     batch_data = data.get_batch(self.train_data, bucket_index,
                                                 config.BUCKETS,

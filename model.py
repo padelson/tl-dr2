@@ -335,9 +335,13 @@ class Summarizer(object):
                     next_bucket = batch_data[3]
                     if len(decoder_inputs) > config.BUCKETS[bucket_index][1]:
                         print 'this sequence is too long', len(decoder_inputs)
-                    for d in decoder_inputs:
-                        if len(d) != 512:
-                            print 'batch size is wrong', len(d)
+                    if len(encoder_inputs) != len(decoder_inputs):
+                        print 'wtf'
+                    for i in range(len(decoder_inputs)):
+                        d = decoder_inputs[i]
+                        e = encoder_inputs[i]
+                        if len(e) != 512 or len(d) != 512:
+                            print 'batch size is wrong', len(d), len(e)
                     _, step_loss, _ = self.run_step(sess, encoder_inputs,
                                                     decoder_inputs,
                                                     decoder_masks,

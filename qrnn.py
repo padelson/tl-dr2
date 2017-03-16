@@ -253,7 +253,7 @@ class QRNN(object):
             Z_v, F_v, O_v = tf.split(1, 3, h_tV)
 
             conv = tf.nn.conv2d(
-                inputs,
+                tf.expand_dims(inputs, -1),
                 W,
                 strides=[1, 1, 1, 1],
                 padding="VALID",

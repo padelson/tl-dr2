@@ -91,8 +91,8 @@ def process(dirname=".", filename="example_data", file_num=0):
                     headline = grabContents(f, "HEADLINE")
                 text = getFirstSentence(f)
                 if len(headline) <= 25 and len(text) <= 50:
-                    h.write(' '.join(headline)+'\n')
-                    t.write(' '.join(text)+'\n')
+                    h.write((' '.join(headline)+'\n').lower())
+                    t.write((' '.join(text)+'\n').lower())
             except Exception:
                 #print docline
                 count += 1
@@ -114,8 +114,10 @@ def ostest():
                 file_num += 1
 
 def count_words(vocab, headline, text):
-    headline = headline.translate(None, punctuation+'\n').split()
-    text = text.translate(None, punctuation+'\n').split()
+    # headline = headline.translate(None, punctuation+'\n').split()
+    # text = text.translate(None, punctuation+'\n').split()
+    headline = headline.split()
+    text = text.split()
     for word in headline:
         vocab[word] += 1
     for word in text:

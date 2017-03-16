@@ -24,7 +24,8 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
             new_input = embedded_dec_inputs[:, 0, :]
         else:
             step_input = layer_inputs[0]
-            new_input = get_input_from_state(H[-1], decoder.output_projection)
+            new_input = get_input_from_state(H[-1], embeddings,
+                                             decoder.output_projection)
         step_input = advance_step_input(step_input, new_input)
 
         for j in range(decoder.num_layers):

@@ -1,5 +1,5 @@
 # parse the gigaword files
-
+import json
 import os
 import re
 import time

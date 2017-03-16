@@ -262,6 +262,7 @@ class Summarizer(object):
         eval_iter = 0
         avg_loss = np.sum(train_losses) / len(train_losses)
         print 'Average train loss', avg_loss
+        eval_start = time.time()
         for bucket_index in xrange(len(config.BUCKETS)):
             bucket_count = len(self.test_data[bucket_index])
             if bucket_count == 0:
@@ -306,6 +307,7 @@ class Summarizer(object):
         utils.write_results(summaries, avg_loss, bucket_losses,
                             path, gt_path)
         print 'Wrote results to', path
+        print 'Evaluation took', time.time() - eval_start
 
     def train(self):
 

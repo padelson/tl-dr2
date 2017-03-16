@@ -10,7 +10,8 @@ def get_input_from_state(state, embeddings, output_projection, batch_size):
 
 
 def advance_step_input(step_input, new_input):
-    result = tf.concat(1, [step_input, tf.expand_dims(new_input, 1)])
+    result = tf.concat(1, [step_input, new_input])
+    # result = tf.concat(1, [step_input, tf.expand_dims(new_input, 1)])
     return result[:, 1:, :]
 
 

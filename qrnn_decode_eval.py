@@ -3,8 +3,9 @@ import tensorflow as tf
 
 def get_input_from_state(state, embeddings, output_projection, batch_size):
     vocab = tf.nn.xw_plus_b(state, output_projection[0], output_projection[1])
-    word_ids = [tf.argmax(tf.squeeze(i)) for i
-                in tf.split(0, batch_size, vocab)]
+    # word_ids = [tf.argmax(tf.squeeze(i)) for i
+    #             in tf.split(0, batch_size, vocab)]
+    word_ids = tf.argmax(vocab, axis=1)
     return tf.nn.embedding_lookup(embeddings, tf.arg_max(word_ids))
 
 

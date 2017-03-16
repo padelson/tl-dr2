@@ -5,9 +5,42 @@ from qrnn_decode_eval import decode_evaluate
 
 
 class QRNN(object):
+    def _init_vars(self):
+        for i in xrange(self.num_layers):
+            input_shape = self.embedding_size if i == 0 else \
+                self.num_convs
+            with tf.variable_scope("QRNN/"+self.name +
+                                   "/Variable/Convolution/"+str(i),
+                                   reuse=False):
+                filter_shape = self._get_filter_shape(input_shape)
+                tf.get_variable('W', filter_shape,
+                                initializer=self.initializer)
+                tf.get_variable('b', [self.num_convs*3],
+                                initializer=self.initializer)
+            with tf.variable_scope("QRNN/"+self.name +
+                                   "/Variable/Conv_w_enc_out/"+str(i),
+                                   reuse=False):
+                v_shape = (self.num_convs, self.num_convs*3)
+                tf.get_variable('V', v_shape,
+                                initializer=self.initializer)
+                tf.get_variable('b', [self.num_convs*3],
+                                initializer=self.initializer)
+                filter_shape = self._get_filter_shape(input_shape)
+                tf.get_variable('W', filter_shape,
+                                initializer=self.initializer)
+        with tf.variable_scope('QRNN/'+self.name +
+                               '/Conv_with_attention/', reuse=False):
+            attn_weight_shape = [self.num_convs, self.num_convs]
+            tf.get_variable('W_k', attn_weight_shape,
+                            initializer=self.initializer)
+            tf.get_variable('W_c', attn_weight_shape,
+                            initializer=self.initializer)
+            tf.get_variable('b_o', [self.num_convs],
+                            initializer=self.initializer)
+
     def __init__(self, num_symbols, batch_size, seq_length,
                  embedding_size, num_layers, conv_size, num_convs,
-                 output_projection=None):
+                 output_projection=None, name=''):
         self.num_symbols = num_symbols
         self.batch_size = batch_size
         self.seq_length = seq_length
@@ -17,6 +50,8 @@ class QRNN(object):
         self.num_convs = num_convs
         self.output_projection = output_projection
         self.initializer = tf.random_normal_initializer()
+        self.name = name
+        self._init_vars()
 
     def get_embeddings(self, embeddings, word_ids):
         if word_ids is None:
@@ -69,7 +104,9 @@ class QRNN(object):
     # filter_width = embedding_size
 
     def conv_layer(self, layer_id, inputs, input_shape):
-        with tf.variable_scope("QRNN/Variable/Convolution/"+str(layer_id)):
+        with tf.variable_scope("QRNN/"+self.name +
+                               "/Variable/Convolution/"+str(layer_id),
+                               reuse=True):
             filter_shape = self._get_filter_shape(input_shape)
             W = tf.get_variable('W', filter_shape,
                                 initializer=self.initializer)
@@ -92,7 +129,7 @@ class QRNN(object):
             #             1, num_convs*3]
             # squeeze out 3rd D
             # split 4th (now 3rd) dim into 3
-            Z, F, O = tf.split(2, 3, tf.squeeze(conv))
+            Z, F, O = tf.split(2, 3, tf.squeeze(conv, [2]))
             return self.fo_pool((tf.tanh(Z)), tf.sigmoid(F), tf.sigmoid(O))
 
     def conv_with_encode_output(self, layer_id, h_t, inputs,
@@ -101,7 +138,9 @@ class QRNN(object):
         if seq_len is None:
             seq_len = self.seq_length
         pooling = self.fo_pool if pool else lambda x, y, z, seq_len: (x, y, z)
-        with tf.variable_scope("QRNN/Variable/Conv_w_enc_out/"+str(layer_id)):
+        with tf.variable_scope("QRNN/"+self.name +
+                               "/Variable/Conv_w_enc_out/"+str(layer_id),
+                               reuse=True):
             v_shape = (self.num_convs, self.num_convs*3)
             V = tf.get_variable('V', v_shape,
                                 initializer=self.initializer)
@@ -142,8 +181,12 @@ class QRNN(object):
                             input_shape, seq_len=None):
         if seq_len is None:
             seq_len = self.seq_length
+        h_t = tf.squeeze(encode_outputs[-1][:, -1, :])
+        Z, F, O = self.conv_with_encode_output(layer_id, h_t, inputs,
+                                               input_shape, pool=False)
         # input dim [batch, seq_len, num_convs]
-        with tf.variable_scope('QRNN/Conv_with_attention/'):
+        with tf.variable_scope('QRNN/'+self.name +
+                               '/Conv_with_attention/', reuse=True):
             attn_weight_shape = [self.num_convs, self.num_convs]
 
             W_k = tf.get_variable('W_k', attn_weight_shape,
@@ -152,10 +195,6 @@ class QRNN(object):
                                   initializer=self.initializer)
             b_o = tf.get_variable('b_o', [self.num_convs],
                                   initializer=self.initializer)
-
-            h_t = tf.squeeze(encode_outputs[-1][:, -1, :])
-            Z, F, O = self.conv_with_encode_output(layer_id, h_t, inputs,
-                                                   input_shape, pool=False)
 
             # calculate attention
             enc_final_state = encode_outputs[-1]
@@ -182,7 +221,7 @@ class QRNN(object):
     def transform_output(self, inputs):
         # input dim list of [batch, num_convs]
         shape = (self.num_convs, self.num_symbols)
-        with tf.variable_scope('QRNN/Transform_output'):
+        with tf.variable_scope('QRNN/'+self.name+'/Transform_output'):
             W = tf.get_variable('W', shape,
                                 initializer=self.initializer)
             b = tf.get_variable('b', [self.num_symbols],
@@ -197,7 +236,9 @@ class QRNN(object):
                                      input_shape, c_prev, pool=True):
         seq_len = self.conv_size
         pooling = self.fo_pool if pool else lambda v, w, x, y, z: (v, w, x)
-        with tf.variable_scope("QRNN/Variable/Conv_w_enc_out/"+str(layer_id)):
+        with tf.variable_scope("QRNN/"+self.name +
+                               "/Variable/Conv_w_enc_out/"+str(layer_id),
+                               reuse=True):
             v_shape = (self.num_convs, self.num_convs*3)
             V = tf.get_variable('V', v_shape,
                                 initializer=self.initializer)
@@ -212,7 +253,7 @@ class QRNN(object):
             Z_v, F_v, O_v = tf.split(1, 3, h_tV)
 
             conv = tf.nn.conv2d(
-                inputs,
+                tf.expand_dims(inputs, -1),
                 W,
                 strides=[1, 1, 1, 1],
                 padding="VALID",
@@ -221,7 +262,7 @@ class QRNN(object):
             #             1, num_convs*3]
             # squeeze out 3rd D
             # split 4th (now 3rd) dim into 3
-            Z_conv, F_conv, O_conv = tf.split(2, 3, tf.squeeze(conv))
+            Z_conv, F_conv, O_conv = tf.split(2, 3, tf.squeeze(conv, [2]))
             Z = Z_conv + tf.expand_dims(Z_v, 1)
             F = F_conv + tf.expand_dims(F_v, 1)
             O = O_conv + tf.expand_dims(O_v, 1)
@@ -232,7 +273,8 @@ class QRNN(object):
                                  input_shape, c_prev):
         seq_len = self.conv_size
         # input dim [batch, seq_len, num_convs]
-        with tf.variable_scope('QRNN/Conv_with_attention/'):
+        with tf.variable_scope('QRNN/'+self.name +
+                               '/Conv_with_attention/', reuse=True):
             attn_weight_shape = [self.num_convs, self.num_convs]
 
             W_k = tf.get_variable('W_k', attn_weight_shape,
@@ -275,10 +317,10 @@ def init_encoder_and_decoder(num_encoder_symbols, num_decoder_symbols,
                              embedding_size, num_layers, conv_size, num_convs,
                              output_projection):
     encoder = QRNN(num_encoder_symbols, batch_size, enc_seq_length,
-                   embedding_size, num_layers, conv_size, num_convs)
+                   embedding_size, num_layers, conv_size, num_convs, 'enc')
     decoder = QRNN(num_decoder_symbols, batch_size, dec_seq_length,
                    embedding_size, num_layers, conv_size, num_convs,
-                   output_projection)
+                   output_projection, 'dec')
     return encoder, decoder
 
 
@@ -328,6 +370,6 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
     def dec_eval():
         return decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                                embeddings)
-    result = tf.cond(training, dec_eval, dec_train)
+    result = tf.cond(training, dec_train, dec_eval)
     return [tf.squeeze(x) for x in
             tf.split(1, decoder.seq_length, result)], None

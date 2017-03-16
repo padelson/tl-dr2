@@ -367,12 +367,13 @@ class Summarizer(object):
                         prog = utils.Progbar(target=bucket_sizes[bucket_index])
                     total_losses.append(step_loss)
                     if end_while or \
-                       iteration == 20 or \
+                       iteration == 200 or \
                        (iteration > 0 and iteration % 1000 == 0):
                         saver.save(sess, os.path.join(self.checkpoint_path,
                                                       'summarizer'),
                                    global_step=iteration)
-                        if iteration == 20 or iteration % 1000 == 0:
+                        if iteration == 200 or epoch < 2 \
+                                or iteration % 2000 == 0:
                             self.evaluate(sess, total_losses, iteration)
                     iteration += 1
                     if sum(bucket_sizes) == 1:

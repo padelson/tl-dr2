@@ -22,6 +22,8 @@ def get_glove_vecs(vocab, glove_file):
                 vocab.remove(word)
             if len(vocab) == 0:
                 break
+        if (len(vocab) != 0):
+            print 'didnt find vecs for', vocab
         result = [vecs[w] for w in vocab_copy]
         return result
 
@@ -38,7 +40,7 @@ if __name__ == '__main__':
     print 'getting encoder vocab'
     enc_vocab = load_and_split_file('enc_vocab.txt')
     glove_path = '/datadrive/glove/glove.6B.'+sys.argv[1]+'d.txt'
-    vecs = get_glove_vecs(enc_vocab, glove_path)
+    vecs = get_glove_vecs(enc_vocab[4:], glove_path)
     write_results(vecs, sys.argv[1], 'enc')
     # print 'getting decoder vocab'
     # dec_vocab = load_and_split_file('enc_vocab.txt')

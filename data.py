@@ -1,3 +1,4 @@
+import json
 import os
 
 import numpy as np
@@ -11,6 +12,14 @@ def _read_and_split_file(path):
         if result[-1] == '':
             return result[:-1]
         return result
+
+
+def load_embeddings(path):
+    with open(os.path.join(path, 'embeddings.txt')) as f:
+        vecs = json.loads(f.read())
+        if vecs[-1] == '':
+            return np.stack(vecs[:-1])
+        return np.stack(vecs)
 
 
 def _get_bucket(size, buckets):

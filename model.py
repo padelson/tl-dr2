@@ -301,6 +301,15 @@ class Summarizer(object):
         def get_epoch_iter(iteration, target):
             step_iter = iteration % target
             return target if iteration > 0 and step_iter == 0 else step_iter
+
+        def get_target():
+            batch_size = float(config.BATCH_SIZE)
+
+            def count_per_batch(x): return int(np.ceil(len(x) / batch_size))
+            target = sum([count_per_batch(v['dec_input'])
+                          for k, v in self.train_data.iteritems()])
+            return target - 1
+
         saver = tf.train.Saver()
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -308,8 +317,7 @@ class Summarizer(object):
             iteration = self.global_step.eval()
             # target = int(np.ceil(self.num_train_points /
             #                      float(config.BATCH_SIZE))) - 1
-            target = sum([int(np.ceil(len(v['dec_input']) for k, v
-                          in self.train_data))])
+            target = get_target()
             # cur_epoch = iteration / (target+1)
             cur_epoch = self.epoch.eval()
             bucket_index = self.bucket_index.eval()

@@ -1,6 +1,7 @@
 import collections
 import json
 
+
 def get_vecs(vocab, num_to_keep):
     vecs_path = '/datadrive/glove/glove.6B.200d.txt'
     vecs = {}
@@ -32,7 +33,7 @@ with open('toy_headlines.txt') as f:
         for w in line.split():
             vocab[w] += 1
 dec_vocab = sorted(vocab.items(), key=lambda x: x[1], reverse=True)[:2000]
-vecs, vocab = get_vecs(dec_vocab, n)
+vecs, vocab = get_vecs([w[0] for w in dec_vocab], n)
 with open('embeddings.txt', 'w') as f:
     f.write(json.dumps(vecs))
 with open('vocab.txt', 'w') as f:
@@ -41,4 +42,4 @@ with open('vocab.txt', 'w') as f:
     f.write('<s>' + '\n')
     f.write('<\s>' + '\n')
     for word in vocab:
-        f.write(word[0]+'\n')
+        f.write(word+'\n')

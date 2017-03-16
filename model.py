@@ -303,25 +303,13 @@ class Summarizer(object):
             step_iter = iteration % target
             return target if iteration > 0 and step_iter == 0 else step_iter
 
-        def get_target():
-            batch_size = float(config.BATCH_SIZE)
-
-            def count_per_batch(x): return int(np.ceil(len(x) / batch_size))
-            target = sum([count_per_batch(v['dec_input'])
-                          for k, v in self.train_data.iteritems()])
-            return target - 1
-
         saver = tf.train.Saver()
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             self._check_restore_parameters(sess, saver)
             iteration = self.global_step.eval()
-            # target = int(np.ceil(self.num_train_points /
-            #                      float(config.BATCH_SIZE))) - 1
-            target = get_target()
             bucket_sizes = [len(v['dec_input'])-1 for k, v
                             in self.train_data.iteritems()]
-            # cur_epoch = iteration / (target+1)
             cur_epoch = self.epoch.eval()
             bucket_index = self.bucket_index.eval()
             step_iter = self.bucket_step.eval()
@@ -333,7 +321,7 @@ class Summarizer(object):
                 sess.run(tf.assign(self.epoch, epoch))
                 print '\n', 'Epoch:', epoch+1
                 print 'Bucket sizes', bucket_sizes
-                if target != 0:
+                if sum(bucket_sizes) > 1:
                     prog = utils.Progbar(target=bucket_sizes[bucket_index])
                 end_while = False
                 while True:
@@ -361,7 +349,7 @@ class Summarizer(object):
                         end_while = True
                         bucket_index = sess.run(tf.assign(self.bucket_index,
                                                           0))
-                    elif target != 0:
+                    elif sum(bucket_sizes) > 1:
                         print
                         prog = utils.Progbar(target=bucket_sizes[bucket_index])
                     total_losses.append(step_loss)
@@ -374,12 +362,12 @@ class Summarizer(object):
                         if iteration == 20 or iteration % 1000 == 0:
                             self.evaluate(sess, total_losses, iteration)
                     iteration += 1
-                    if target == 0:
+                    if sum(bucket_sizes) == 1:
                         print 'Train loss', step_loss
                     if end_while:
                         print 'Epoch', epoch+1, 'took', time.time()-epoch_start
                         break
-                    if target != 0:
+                    if sum(bucket_sizes) > 1:
                         prog.update(step_iter,
                                     [("train loss", step_loss),
                                      ('batch runtime',

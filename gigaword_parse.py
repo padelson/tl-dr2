@@ -182,8 +182,8 @@ def build_vocab():
     with open('embeddings.txt', 'w') as embeddings_f:
         embeddings_f.write(json.dumps(vecs))
     for words in top10000:
-        enc.write(entry[0] + '\n')
-        dec.write(entry[0] + '\n')
+        enc.write(entry + '\n')
+        dec.write(entry + '\n')
     write(out, dist)
     out.close()
     enc.close()

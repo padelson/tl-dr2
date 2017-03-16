@@ -201,6 +201,7 @@ class Summarizer(object):
         self.create_opt = create_opt
         self.sess_name = sess_name
         self.model = model
+        print '###Initializing', model, 'model'
 
         self._setup_sess_dir()
         self._setup_data()
@@ -322,7 +323,8 @@ class Summarizer(object):
             cur_epoch = self.epoch.eval()
             bucket_index = self.bucket_index.eval()
             step_iter = self.bucket_step.eval()
-            print 'Starting at', iteration, cur_epoch, bucket_index, step_iter
+            print 'Starting at iter:', iteration, 'epoch:', cur_epoch+1, \
+                  'bucket index:', bucket_index, 'bucket step:', step_iter
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
                 epoch_start = time.time()
                 total_losses = []

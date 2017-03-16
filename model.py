@@ -319,6 +319,8 @@ class Summarizer(object):
             # target = int(np.ceil(self.num_train_points /
             #                      float(config.BATCH_SIZE))) - 1
             target = get_target()
+            bucket_sizes = [len(v['dec_input'])-1 for k, v
+                            in self.train_data.iteritems()]
             # cur_epoch = iteration / (target+1)
             cur_epoch = self.epoch.eval()
             bucket_index = self.bucket_index.eval()
@@ -330,8 +332,9 @@ class Summarizer(object):
                 total_losses = []
                 sess.run(tf.assign(self.epoch, epoch))
                 print '\n', 'Epoch:', epoch+1
+                print 'Bucket sizes', bucket_sizes
                 if target != 0:
-                    prog = utils.Progbar(target=target)
+                    prog = utils.Progbar(target=bucket_sizes[bucket_index])
                 end_while = False
                 while True:
                     batch_start = time.time()
@@ -358,8 +361,11 @@ class Summarizer(object):
                         end_while = True
                         bucket_index = sess.run(tf.assign(self.bucket_index,
                                                           0))
+                    elif target != 0:
+                        print
+                        prog = utils.Progbar(target=bucket_sizes[bucket_index])
                     total_losses.append(step_loss)
-                    if bucket_index >= len(config.BUCKETS) or \
+                    if end_while or \
                        iteration == 20 or \
                        (iteration > 0 and iteration % 1000 == 0):
                         saver.save(sess, os.path.join(self.checkpoint_path,
@@ -374,7 +380,7 @@ class Summarizer(object):
                         print 'Epoch', epoch+1, 'took', time.time()-epoch_start
                         break
                     if target != 0:
-                        prog.update(get_epoch_iter(iteration, target),
+                        prog.update(step_iter,
                                     [("train loss", step_loss),
                                      ('batch runtime',
                                       time.time() - batch_start)])

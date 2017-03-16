@@ -348,7 +348,7 @@ class Summarizer(object):
                         end_while = True
                         bucket_index = sess.run(tf.assign(self.bucket_index,
                                                           0))
-                    elif sum(bucket_sizes) > 1:
+                    if next_bucket and sum(bucket_sizes) > 1:
                         print
                         prog = utils.Progbar(target=bucket_sizes[bucket_index])
                     total_losses.append(step_loss)

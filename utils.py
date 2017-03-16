@@ -29,7 +29,7 @@ def write_results(summaries, train_loss, losses, filepath, gt_summaries_path):
             f.write(sums+'\n')
     # metrics_results = _eval_metrics(dir_path, gt_summaries_path)
     with open(os.path.join(filepath, 'log'), 'w') as f:
-        f.write('Train loss: ' + str(train_loss))
+        f.write('Avg Train loss: ' + str(train_loss))
         for loss in losses:
             f.write(str(loss) + '\n')
         f.write('\n' * 3)

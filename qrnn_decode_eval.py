@@ -31,7 +31,8 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
             new_input = get_input_from_state(H[-1], embeddings,
                                              decoder.output_projection,
                                              decoder.batch_size)
-        step_input = advance_step_input(step_input, tf.expand_dims(new_input, 1))
+        step_input = advance_step_input(step_input,
+                                        tf.expand_dims(new_input, 1))
 
         for j in range(decoder.num_layers):
             enc_out = tf.squeeze(encode_outputs[j][:, -1, :])

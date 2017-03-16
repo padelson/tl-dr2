@@ -3,7 +3,9 @@ import tensorflow as tf
 
 def get_input_from_state(state, embeddings, output_projection):
     vocab = tf.nn.xw_plus_b(state, output_projection[0], output_projection[1])
-    return tf.nn.embedding_lookup(embeddings, tf.arg_max(vocab, axis=1))
+    word_ids = [tf.argmax(tf.squeeze(i)) for i
+                in tf.split(0, tf.shape(vocab)[0], state)]
+    return tf.nn.embedding_lookup(embeddings, tf.arg_max(word_ids))
 
 
 def advance_step_input(step_input, new_input):

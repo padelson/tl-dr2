@@ -132,7 +132,13 @@ class Summarizer(object):
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
         if self.model == 'qrnn':
-            self.embeddings = tf.constant(data.load_embeddings(self.data_path))
+            if self.pretrained:
+                embeddings = data.load_embeddings(self.data_path)
+                self.embeddings = tf.constant(embeddings)
+            else:
+                embed_init = tf.contrib.layers.xavier_initializer()
+                self.embeddings = tf.Variable(embed_init([self.enc_vocab,
+                                                          config.HIDDEN_SIZE]))
         feed_prev = self.feed_prev_placeholder
         self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
                                     self.encoder_inputs,
@@ -194,11 +200,12 @@ class Summarizer(object):
                     print('Created opt for bucket {}'.format(bucket))
         print 'Took', time.time() - start, 'seconds'
 
-    def __init__(self, data_path, create_opt, sess_name, model):
+    def __init__(self, data_path, create_opt, sess_name, model, pretrained):
         self.data_path = data_path
         self.create_opt = create_opt
         self.sess_name = sess_name
         self.model = model
+        self.pretrained = pretrained
         print '###Initializing', model, 'model'
 
         self._setup_sess_dir()

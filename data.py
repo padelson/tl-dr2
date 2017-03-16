@@ -18,7 +18,7 @@ def load_embeddings(path):
     with open(os.path.join(path, 'embeddings.txt')) as f:
         vecs = json.loads(f.read())
         if vecs[-1] == '':
-            return np.stakc(vecs[:-1])
+            return np.stack(vecs[:-1])
         return np.stack(vecs)
 
 
@@ -118,13 +118,13 @@ def make_dir(path):
 def _reshape(inputs, size, batch_size):
     """ Create batch-major inputs. Batch inputs are just re-indexed inputs
     """
-    batch_inputs = []
-    for length_id in xrange(size):
-        batch_inputs.append(np.array([inputs[batch_id][length_id]
-                                      for batch_id in xrange(batch_size)],
-                                     dtype=np.int32))
+    # batch_inputs = []
+    # for length_id in xrange(size):
+    #     batch_inputs.append(np.array([inputs[batch_id][length_id]
+    #                                   for batch_id in xrange(batch_size)],
+    #                                  dtype=np.int32))
     # TODO make sure this works
-    # batch_inputs = np.array(inputs).T
+    batch_inputs = np.array(inputs).T
     return batch_inputs
 
 

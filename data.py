@@ -109,14 +109,14 @@ def make_dir(path):
 def _reshape(inputs, size, batch_size):
     """ Create batch-major inputs. Batch inputs are just re-indexed inputs
     """
-    batch_inputs = np.array([])
-    for length_id in xrange(size):
-        reindexed = np.array([inputs[batch_id][length_id]
-                             for batch_id in xrange(batch_size)],
-                             dtype=np.int32)
-        np.append(batch_inputs, reindexed, axis=0)
+    # batch_inputs = np.array([])
+    # for length_id in xrange(size):
+    #     reindexed = np.array([inputs[batch_id][length_id]
+    #                          for batch_id in xrange(batch_size)],
+    #                          dtype=np.int32)
+    #     np.append(batch_inputs, reindexed, axis=0)
     # TODO make sure this works
-    # batch_inputs = np.array(inputs).T
+    batch_inputs = np.array(inputs).T
     return batch_inputs
 
 

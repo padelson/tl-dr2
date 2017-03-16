@@ -134,7 +134,7 @@ def get_vecs(vocab, num_to_keep):
     vecs_path = '/datadrive/glove/glove.6B.200d.txt'
     vecs = {}
     vocab_copy = list(vocab)
-    with open(glove_file) as f:
+    with open(vecs_path) as f:
         for line in f:
             split = line.split()
             word = split[0]

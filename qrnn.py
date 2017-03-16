@@ -6,7 +6,7 @@ from qrnn_decode_eval import decode_evaluate
 
 class QRNN(object):
     def _init_vars(self):
-        for i in self.num_layers:
+        for i in xrange(self.num_layers):
             input_shape = self.embedding_size if i == 0 else \
                 self.num_convs
             with tf.variable_scope("QRNN/Variable/Convolution/"+str(i),

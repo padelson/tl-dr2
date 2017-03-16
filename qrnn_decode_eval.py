@@ -1,10 +1,10 @@
 import tensorflow as tf
 
 
-def get_input_from_state(state, embeddings, output_projection, state_size):
+def get_input_from_state(state, embeddings, output_projection, batch_size):
     vocab = tf.nn.xw_plus_b(state, output_projection[0], output_projection[1])
     word_ids = [tf.argmax(tf.squeeze(i)) for i
-                in tf.split(0, state_size, vocab)]
+                in tf.split(0, batch_size, vocab)]
     return tf.nn.embedding_lookup(embeddings, tf.arg_max(word_ids))
 
 
@@ -28,7 +28,7 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
             step_input = layer_inputs[0]
             new_input = get_input_from_state(H[-1], embeddings,
                                              decoder.output_projection,
-                                             decoder.embedding_size)
+                                             decoder.batch_size)
         step_input = advance_step_input(step_input, new_input)
 
         for j in range(decoder.num_layers):

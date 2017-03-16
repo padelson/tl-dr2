@@ -128,6 +128,24 @@ def write(f, d):
         f.write('%s\t' % elem[0])
         f.write('%d\n' % elem[1])
 
+def get_vecs(vocab, num_to_keep):
+    vecs_path = '/datadrive/glove/glove.6B.200d.txt'
+    vecs = {}
+    vocab_copy = list(vocab)
+    with open(glove_file) as f:
+        for line in f:
+            split = line.split()
+            word = split[0]
+            if word in vocab:
+                vecs[word] = map(float, split[1:])
+                vocab.remove(word)
+            if len(vocab) == 0:
+                break
+        if (len(vocab) != 0):
+            print 'didnt find vecs for', vocab
+        result = [(vecs[w], w) for w in vocab_copy if w in vecs][:num_to_keep]
+        return [x[0] for x in result], [x[1] for x in result]
+
 def build_vocab():
     print 'build_vocab'
     vocab = collections.defaultdict(int)
@@ -155,8 +173,11 @@ def build_vocab():
             t.close()
 
     #count_words(None, vocab, dist)
-    top10000 = sorted(vocab.items(), key=lambda x: x[1], reverse=True)[:10000]
-    for entry in top10000:
+    top20000 = sorted(vocab.items(), key=lambda x: x[1], reverse=True)[:20000]
+    vecs, words = get_vecs(top20000, 10000)
+    with open('embeddings.txt', 'w') as embeddings_f:
+        embeddings_f.write(json.dumps(vecs))
+    for words in top10000:
         enc.write(entry[0] + '\n')
         dec.write(entry[0] + '\n')
     write(out, dist)

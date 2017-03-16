@@ -10,7 +10,8 @@ def load_and_split_file(path):
         return result
 
 
-def get_glove_vecs(vocab, glove_file):
+# vocab should be sorted in most to least frequent
+def get_glove_vecs(vocab, glove_file, num_to_keep):
     vecs = {}
     vocab_copy = list(vocab)
     with open(glove_file) as f:
@@ -24,8 +25,8 @@ def get_glove_vecs(vocab, glove_file):
                 break
         if (len(vocab) != 0):
             print 'didnt find vecs for', vocab
-        result = [vecs[w] for w in vocab_copy if w in vecs]
-        return result
+        result = [(vecs[w], w) for w in vocab_copy if w in vecs][:num_to_keep]
+        return [x[0] for x in result], [x[1] for x in result]
 
 
 def write_results(vecs, size, vocab_name):

@@ -6,7 +6,7 @@ def get_input_from_state(state, embeddings, output_projection, batch_size):
     # word_ids = [tf.argmax(tf.squeeze(i)) for i
     #             in tf.split(0, batch_size, vocab)]
     word_ids = tf.argmax(vocab, axis=1)
-    return tf.nn.embedding_lookup(embeddings, tf.arg_max(word_ids))
+    return tf.nn.embedding_lookup(embeddings, word_ids)
 
 
 def advance_step_input(step_input, new_input):

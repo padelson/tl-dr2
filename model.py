@@ -13,7 +13,17 @@ from qrnn import init_encoder_and_decoder, seq2seq_f
 
 class Summarizer(object):
     def _seq_f(self, encoder_inputs, decoder_inputs, do_decode):
-        # TODO output projection?
+        if self.model == 'rnn':
+            return tf.nn.seq2seq.embedding_attention_seq2seq(
+                encoder_inputs,
+                decoder_inputs,
+                self.cell,
+                num_encoder_symbols=self.enc_vocab,
+                num_decoder_symbols=self.dec_vocab,
+                embedding_size=config.HIDDEN_SIZE,
+                output_projection=self.output_projection,
+                feed_previous=do_decode)
+
         enc_seq_length = len(encoder_inputs)
         dec_seq_length = len(decoder_inputs)
         encoder, decoder = init_encoder_and_decoder(self.enc_vocab,
@@ -83,8 +93,8 @@ class Summarizer(object):
         self.encoder_inputs = []
         self.decoder_inputs = []
         self.decoder_masks = []
-        self.training_placeholder = tf.placeholder(tf.bool, shape=[],
-                                                   name='training')
+        self.feed_prev_placeholder = tf.placeholder(tf.bool, shape=[],
+                                                    name='feed_prev')
         for i in xrange(config.BUCKETS[-1][0]):  # Last bucket is the biggest.
             self.encoder_inputs.append(tf.placeholder(tf.int32, shape=[None],
                                        name='encoder{}'.format(i)))
@@ -103,7 +113,9 @@ class Summarizer(object):
         print 'Creating loss...  ',
         start = time.time()
         if config.NUM_SAMPLES > 0 and config.NUM_SAMPLES < self.dec_vocab:
-            w = tf.get_variable('proj_w', [config.NUM_CONVS,
+            proj_w_size = config.NUM_CONVS if self.model == 'qrnn' \
+                else config.HIDDEN_SIZE
+            w = tf.get_variable('proj_w', [proj_w_size,
                                            self.dec_vocab])
             b = tf.get_variable('proj_b', [self.dec_vocab])
             self.output_projection = (w, b)
@@ -119,17 +131,18 @@ class Summarizer(object):
         single_cell = tf.nn.rnn_cell.GRUCell(config.HIDDEN_SIZE)
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
-        embed_init = tf.contrib.layers.xavier_initializer()
-        self.embeddings = tf.Variable(embed_init([self.enc_vocab,
-                                                  config.HIDDEN_SIZE]))
-        training = self.training_placeholder
+        if self.model == 'qrnn':
+            embed_init = tf.contrib.layers.xavier_initializer()
+            self.embeddings = tf.Variable(embed_init([self.enc_vocab,
+                                                      config.HIDDEN_SIZE]))
+        feed_prev = self.feed_prev_placeholder
         self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
                                     self.encoder_inputs,
                                     self.decoder_inputs,
                                     self.targets,
                                     self.decoder_masks,
                                     config.BUCKETS,
-                                    lambda x, y: self._seq_f(x, y, training),
+                                    lambda x, y: self._seq_f(x, y, feed_prev),
                                     softmax_loss_function=self.softmax_loss
                                     )
         # If we use output projection, we need to project outputs for decoding.
@@ -148,7 +161,7 @@ class Summarizer(object):
 
         for bucket in xrange(len(config.BUCKETS)):
             cur = self.outputs[bucket]
-            self.outputs[bucket] = tf.cond(self.training_placeholder,
+            self.outputs[bucket] = tf.cond(self.feed_prev_placeholder,
                                            do_nothing,
                                            project_outputs)
 
@@ -183,10 +196,11 @@ class Summarizer(object):
                     print('Created opt for bucket {}'.format(bucket))
         print 'Took', time.time() - start, 'seconds'
 
-    def __init__(self, data_path, create_opt, sess_name):
+    def __init__(self, data_path, create_opt, sess_name, model):
         self.data_path = data_path
         self.create_opt = create_opt
         self.sess_name = sess_name
+        self.model = model
 
         self._setup_sess_dir()
         self._setup_data()
@@ -215,7 +229,7 @@ class Summarizer(object):
             input_feed[self.decoder_masks[step].name] = decoder_masks[step]
         last_target = self.decoder_inputs[decoder_size].name
         input_feed[last_target] = np.zeros([config.BATCH_SIZE], dtype=np.int32)
-        input_feed[self.training_placeholder] = update_params
+        input_feed[self.feed_prev_placeholder] = not update_params
         # output feed: depends on whether we do a backward step or not.
         if update_params:
             output_feed = [self.train_ops[bucket_id],  # update that does SGD.
@@ -231,13 +245,15 @@ class Summarizer(object):
         else:
             return None, outputs[0], outputs[1:]  # No grad norm, loss, outputs
 
-    def evaluate(self, sess, train_loss, iteration, test=False):
+    def evaluate(self, sess, train_losses, iteration, test=False):
         bucket_losses = []
         summaries = []
         eval_iter = 0
-        print 'Total train loss', train_loss
+        avg_loss = np.sum(train_losses) / len(train_losses)
+        print 'Average train loss', avg_loss
         for bucket_index in xrange(len(config.BUCKETS)):
-            if len(self.test_data[bucket_index]) == 0:
+            bucket_count = len(self.test_data[bucket_index])
+            if bucket_count == 0:
                 print 'Test: empty bucket', bucket_index
                 continue
             bucket_loss = 0
@@ -266,7 +282,8 @@ class Summarizer(object):
                 if done:
                     eval_iter = 0
                     break
-            loss_text = 'Test bucket:', bucket_index, 'Loss:', bucket_loss
+            loss_text = 'Test bucket:', bucket_index, 'Avg Loss:', \
+                (bucket_loss / bucket_count)
             print loss_text
             bucket_losses.append(loss_text)
         path = os.path.join(self.results_path,
@@ -275,7 +292,7 @@ class Summarizer(object):
             path += '_test'
         data.make_dir(path)
         gt_path = self.test_headlines_path if test else self.dev_headlines_path
-        utils.write_results(summaries, train_loss, bucket_losses,
+        utils.write_results(summaries, avg_loss, bucket_losses,
                             path, gt_path)
         print 'Wrote results to', path
 
@@ -297,7 +314,8 @@ class Summarizer(object):
             step_iter = self.bucket_step.eval()
             print 'Starting at', iteration, cur_epoch, bucket_index, step_iter
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
-                total_loss = 0
+                epoch_start = time.time()
+                total_losses = []
                 sess.run(tf.assign(self.epoch, epoch))
                 print '\n', 'Epoch:', epoch+1
                 if target != 0:
@@ -327,7 +345,7 @@ class Summarizer(object):
                         end_while = True
                         bucket_index = sess.run(tf.assign(self.bucket_index,
                                                           0))
-                    total_loss += step_loss
+                    total_losses.append(step_loss)
                     if bucket_index >= len(config.BUCKETS) or \
                        iteration == 20 or \
                        (iteration > 0 and iteration % 1000 == 0):
@@ -335,17 +353,18 @@ class Summarizer(object):
                                                       'summarizer'),
                                    global_step=iteration)
                         if iteration == 20 or iteration % 1000 == 0:
-                            self.evaluate(sess, total_loss, iteration)
+                            self.evaluate(sess, total_losses, iteration)
                     iteration += 1
                     if target == 0:
                         print 'Train loss', step_loss
                     if end_while:
+                        print 'Epoch', epoch+1, 'took', time.time()-epoch_start
                         break
                     if target != 0:
                         prog.update(get_epoch_iter(iteration, target),
                                     [("train loss", step_loss)])
 
-            self.evaluate(sess, total_loss, iteration, test=True)
+            self.evaluate(sess, total_losses, iteration, test=True)
             saver.save(sess, os.path.join(self.checkpoint_path,
                                           'summarizer'),
                        global_step=iteration)

@@ -15,6 +15,7 @@ def setup_argparse():
     parser.add_argument('--data_path')
     parser.add_argument('--input_path')
     parser.add_argument('--sess_name')
+    parser.add_argument('--model', choices={'rnn', 'qrnn'})
     return parser
 
 if __name__ == '__main__':
@@ -22,9 +23,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.train:
         summarizer = Summarizer(args.data_path,
-                                True, args.sess_name)
+                                True, args.sess_name, args.model)
         summarizer.train()
     if args.sum:
         summarizer = Summarizer(args.data_path,
-                                False, args.sess_name)
+                                False, args.sess_name, args.model)
         summarizer.summarize(args.input_path)

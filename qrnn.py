@@ -340,7 +340,7 @@ def init_encoder_and_decoder(num_encoder_symbols, num_decoder_symbols,
 
 
 def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
-              training, embeddings):
+              feed_prev, embeddings):
     # inputs are lists of placeholders, each one is shape [None]
     # self.enc_input_size = len(encoder_inputs)
     # self.dec_input_size = len(decoder_inputs)
@@ -385,6 +385,6 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
     def dec_eval():
         return decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                                embeddings)
-    result = tf.cond(training, dec_train, dec_eval)
+    result = tf.cond(feed_prev, dec_eval, dec_train)
     return [tf.squeeze(x) for x in
             tf.split(1, decoder.seq_length, result)], None

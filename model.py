@@ -132,9 +132,7 @@ class Summarizer(object):
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
         if self.model == 'qrnn':
-            embed_init = tf.contrib.layers.xavier_initializer()
-            self.embeddings = tf.Variable(embed_init([self.enc_vocab,
-                                                      config.HIDDEN_SIZE]))
+            self.embeddings = tf.constant(data.load_embeddings(self.data_path))
         feed_prev = self.feed_prev_placeholder
         self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
                                     self.encoder_inputs,

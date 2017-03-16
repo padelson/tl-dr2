@@ -46,7 +46,7 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                                 layer_inputs[j],
                                 decoder.num_convs,
                                 seq_len=decoder.conv_size)
-                    H.append(h_t[:, -1:, :])
+                    H.append(tf.squeeze(h_t[:, -1:, :]))
                     layer_outputs[j] = c_t
             else:
                 if j < decoder.num_layers-1:

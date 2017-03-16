@@ -1,5 +1,5 @@
 # parse the gigaword files
-
+import json
 import os
 import re
 import time
@@ -91,8 +91,8 @@ def process(dirname=".", filename="example_data", file_num=0):
                     headline = grabContents(f, "HEADLINE")
                 text = getFirstSentence(f)
                 if len(headline) <= 25 and len(text) <= 50:
-                    h.write(' '.join(headline)+'\n')
-                    t.write(' '.join(text)+'\n')
+                    h.write((' '.join(headline)+'\n').lower())
+                    t.write((' '.join(text)+'\n').lower())
             except Exception:
                 #print docline
                 count += 1
@@ -114,8 +114,10 @@ def ostest():
                 file_num += 1
 
 def count_words(vocab, headline, text):
-    headline = headline.translate(None, punctuation+'\n').split()
-    text = text.translate(None, punctuation+'\n').split()
+    # headline = headline.translate(None, punctuation+'\n').split()
+    # text = text.translate(None, punctuation+'\n').split()
+    headline = headline.split()
+    text = text.split()
     for word in headline:
         vocab[word] += 1
     for word in text:
@@ -127,6 +129,24 @@ def write(f, d):
         #f.write('%d,%d\t\t' % (elem[0][0], elem[0][1]))
         f.write('%s\t' % elem[0])
         f.write('%d\n' % elem[1])
+
+def get_vecs(vocab, num_to_keep):
+    vecs_path = '/datadrive/glove/glove.6B.200d.txt'
+    vecs = {}
+    vocab_copy = list(vocab)
+    with open(vecs_path) as f:
+        for line in f:
+            split = line.split()
+            word = split[0]
+            if word in vocab:
+                vecs[word] = map(float, split[1:])
+                vocab.remove(word)
+            if len(vocab) == 0:
+                break
+        if (len(vocab) != 0):
+            print 'didnt find vecs for', vocab
+        result = [(vecs[w], w) for w in vocab_copy if w in vecs][:num_to_keep]
+        return [x[0] for x in result], [x[1] for x in result]
 
 def build_vocab():
     print 'build_vocab'
@@ -154,11 +174,15 @@ def build_vocab():
             h.close()
             t.close()
 
-    #count_words(None, vocab, dist)
-    top10000 = sorted(vocab.items(), key=lambda x: x[1], reverse=True)[:10000]
+    # count_words(None, vocab, dist)
+    top20000 = sorted(vocab.items(), key=lambda x: x[1], reverse=True)[:20000]
+    top20000 = [x[0] for x in top20000]
+    vecs, top10000 = get_vecs(top20000, 10000)
+    with open('embeddings.txt', 'w') as embeddings_f:
+        embeddings_f.write(json.dumps(vecs))
     for entry in top10000:
-        enc.write(entry[0] + '\n')
-        dec.write(entry[0] + '\n')
+        enc.write(entry + '\n')
+        dec.write(entry + '\n')
     write(out, dist)
     out.close()
     enc.close()
@@ -218,8 +242,8 @@ def find_dist():
 
 start_time = time.time()
 #test()
-#makeDirs()
-#ostest()
+# makeDirs()
+# ostest()
 build_vocab()
 #find_dist()
 #ostest()

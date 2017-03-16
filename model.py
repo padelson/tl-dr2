@@ -133,8 +133,14 @@ class Summarizer(object):
                                                 config.NUM_LAYERS)
         if self.model == 'qrnn':
             embed_init = tf.contrib.layers.xavier_initializer()
-            self.embeddings = tf.Variable(embed_init([self.enc_vocab,
-                                                      config.HIDDEN_SIZE]))
+            if self.pretrained:
+                pad = tf.constant(np.zeros(config.HIDDEN_SIZE))
+                flags = tf.Variable(embed_init([3, config.HIDDEN_SIZE]))
+                embeddings = tf.constant(data.load_embeddings(self.data_path))
+                self.embeddings = tf.concat(1, [pad, flags, embeddings])
+            else:
+                self.embeddings = tf.Variable(embed_init([self.enc_vocab,
+                                                          config.HIDDEN_SIZE]))
         feed_prev = self.feed_prev_placeholder
         self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
                                     self.encoder_inputs,
@@ -196,11 +202,12 @@ class Summarizer(object):
                     print('Created opt for bucket {}'.format(bucket))
         print 'Took', time.time() - start, 'seconds'
 
-    def __init__(self, data_path, create_opt, sess_name, model):
+    def __init__(self, data_path, create_opt, sess_name, model, pretrained):
         self.data_path = data_path
         self.create_opt = create_opt
         self.sess_name = sess_name
         self.model = model
+        self.pretrained = pretrained
         print '###Initializing', model, 'model'
 
         self._setup_sess_dir()
@@ -333,16 +340,6 @@ class Summarizer(object):
                     decoder_inputs = batch_data[1]
                     decoder_masks = batch_data[2]
                     next_bucket = batch_data[3]
-                    print encoder_inputs.shape, decoder_inputs.shape, decoder_masks.shape
-                    # if len(decoder_inputs) > config.BUCKETS[bucket_index][1]:
-                    #     print 'this sequence is too long', len(decoder_inputs)
-                    # if len(encoder_inputs) != len(decoder_inputs):
-                    #     print 'wtf'
-                    # for i in range(len(decoder_inputs)):
-                    #     d = decoder_inputs[i]
-                    #     e = encoder_inputs[i]
-                    #     if len(e) != 512 or len(d) != 512:
-                    #         print 'batch size is wrong', len(d), len(e)
                     _, step_loss, _ = self.run_step(sess, encoder_inputs,
                                                     decoder_inputs,
                                                     decoder_masks,

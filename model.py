@@ -335,7 +335,7 @@ class Summarizer(object):
                     next_bucket = batch_data[3]
                     assert len(decoder_inputs) == 26
                     for d in decoder_inputs:
-                        assert len(d[0]) == 512
+                        assert len(d) == 512
                     _, step_loss, _ = self.run_step(sess, encoder_inputs,
                                                     decoder_inputs,
                                                     decoder_masks,

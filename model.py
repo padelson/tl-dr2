@@ -350,7 +350,10 @@ class Summarizer(object):
                                                           0))
                     if next_bucket and sum(bucket_sizes) > 1:
                         print
-                        prog.update(bucket_sizes[bucket_index-1])
+                        prog.update(bucket_sizes[bucket_index-1],
+                                    [("train loss", step_loss),
+                                     ('batch runtime',
+                                      time.time() - batch_start)])
                         prog = utils.Progbar(target=bucket_sizes[bucket_index])
                     total_losses.append(step_loss)
                     if end_while or \

@@ -82,6 +82,21 @@ class QRNN(object):
         # i think we want output [batch, seq_len, num_convs]
         return tf.reshape(tf.pack(H), tf.shape(Z)), C[-1]
 
+    def eval_fo_pool(self, Z, F, O, seq_len, c_prev=None):
+        # Z, F, O dims: [batch_size, sequence_length, num_convs]
+        H = []
+        C = [c_prev]
+        for i in range(0, seq_len):
+            c_i = tf.mul(F[:, i, :], C[-1]) + \
+                  tf.mul(1-F[:, i, :], Z[:, i, :])
+            # C[:, i, :] = c_i
+            C.append(c_i)
+            h_i = tf.mul(O[:, i, :], c_i)
+            # H[:, i, :] = h_i
+            H.append(tf.squeeze(h_i))
+        # i think we want output [batch, seq_len, num_convs]
+        return tf.reshape(tf.pack(H), tf.shape(Z)), C[-1]
+
     def f_pool(self, Z, F, sequence_length):
         # Z, F dims: [batch_size, sequence_length, num_convs]
         H = tf.fill(tf.shape(Z), 0)
@@ -235,7 +250,8 @@ class QRNN(object):
     def eval_conv_with_encode_output(self, layer_id, h_t, inputs,
                                      input_shape, c_prev, pool=True):
         seq_len = self.conv_size
-        pooling = self.fo_pool if pool else lambda v, w, x, y, z: (v, w, x)
+        pooling = self.eval_fo_pool if pool else \
+            lambda v, w, x, y, z: (v, w, x)
         with tf.variable_scope("QRNN/"+self.name +
                                "/Variable/Conv_w_enc_out/"+str(layer_id),
                                reuse=True):
@@ -267,7 +283,7 @@ class QRNN(object):
             F = F_conv + tf.expand_dims(F_v, 1)
             O = O_conv + tf.expand_dims(O_v, 1)
             return pooling(tf.tanh(Z), tf.sigmoid(F),
-                           tf.sigmoid(O), seq_len, c_prev)
+                           tf.sigmoid(O), seq_len-1, c_prev)
 
     def eval_conv_with_attention(self, layer_id, encode_outputs, inputs,
                                  input_shape, c_prev):

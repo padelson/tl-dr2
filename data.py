@@ -116,7 +116,7 @@ def _reshape(inputs, size, batch_size):
                              dtype=np.int32)
         np.append(batch_inputs, reindexed, axis=0)
     # TODO make sure this works
-    batch_inputs = np.array(inputs).T
+    # batch_inputs = np.array(inputs).T
     return batch_inputs
 
 

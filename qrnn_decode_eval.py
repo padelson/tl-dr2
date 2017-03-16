@@ -68,7 +68,7 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                                 layer_inputs[j],
                                 decoder.num_convs,
                                 layer_outputs[j])
-                    H.append(h_t)
+                    H.append(tf.squeeze(h_t))
                     layer_outputs[j] = c_t
     return tf.reshape(tf.pack(H), [decoder.batch_size,
                                    decoder.seq_length, decoder.num_convs])

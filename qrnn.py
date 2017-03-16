@@ -129,7 +129,7 @@ class QRNN(object):
             #             1, num_convs*3]
             # squeeze out 3rd D
             # split 4th (now 3rd) dim into 3
-            Z, F, O = tf.split(2, 3, tf.squeeze(conv))
+            Z, F, O = tf.split(2, 3, tf.squeeze(conv, [2]))
             return self.fo_pool((tf.tanh(Z)), tf.sigmoid(F), tf.sigmoid(O))
 
     def conv_with_encode_output(self, layer_id, h_t, inputs,
@@ -262,7 +262,7 @@ class QRNN(object):
             #             1, num_convs*3]
             # squeeze out 3rd D
             # split 4th (now 3rd) dim into 3
-            Z_conv, F_conv, O_conv = tf.split(2, 3, tf.squeeze(conv))
+            Z_conv, F_conv, O_conv = tf.split(2, 3, tf.squeeze(conv, [2]))
             Z = Z_conv + tf.expand_dims(Z_v, 1)
             F = F_conv + tf.expand_dims(F_v, 1)
             O = O_conv + tf.expand_dims(O_v, 1)

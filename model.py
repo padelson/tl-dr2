@@ -138,7 +138,7 @@ class Summarizer(object):
                 flags = tf.Variable(embed_init([3, config.HIDDEN_SIZE],
                                     dtype=tf.float32))
                 embeddings = tf.constant(data.load_embeddings(self.data_path),
-                                         dtype=float32)
+                                         dtype=tf.float32)
                 self.embeddings = tf.concat(1, [pad, flags, embeddings])
             else:
                 self.embeddings = tf.Variable(embed_init([self.enc_vocab,

@@ -24,7 +24,7 @@ def get_glove_vecs(vocab, glove_file):
                 break
         if (len(vocab) != 0):
             print 'didnt find vecs for', vocab
-        result = [vecs[w] for w in vocab_copy]
+        result = [vecs[w] for w in vocab_copy if w in vecs]
         return result
 
 

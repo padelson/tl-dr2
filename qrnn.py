@@ -9,14 +9,16 @@ class QRNN(object):
         for i in xrange(self.num_layers):
             input_shape = self.embedding_size if i == 0 else \
                 self.num_convs
-            with tf.variable_scope("QRNN/Variable/Convolution/"+str(i),
+            with tf.variable_scope("QRNN/"+self.name +
+                                   "/Variable/Convolution/"+str(i),
                                    reuse=False):
                 filter_shape = self._get_filter_shape(input_shape)
                 tf.get_variable('W', filter_shape,
                                 initializer=self.initializer)
                 tf.get_variable('b', [self.num_convs*3],
                                 initializer=self.initializer)
-            with tf.variable_scope("QRNN/Variable/Conv_w_enc_out/"+str(i),
+            with tf.variable_scope("QRNN/"+self.name +
+                                   "/Variable/Conv_w_enc_out/"+str(i),
                                    reuse=False):
                 v_shape = (self.num_convs, self.num_convs*3)
                 tf.get_variable('V', v_shape,
@@ -26,7 +28,8 @@ class QRNN(object):
                 filter_shape = self._get_filter_shape(input_shape)
                 tf.get_variable('W', filter_shape,
                                 initializer=self.initializer)
-        with tf.variable_scope('QRNN/Conv_with_attention/', reuse=False):
+        with tf.variable_scope('QRNN/'+self.name +
+                               '/Conv_with_attention/', reuse=False):
             attn_weight_shape = [self.num_convs, self.num_convs]
             tf.get_variable('W_k', attn_weight_shape,
                             initializer=self.initializer)
@@ -37,7 +40,7 @@ class QRNN(object):
 
     def __init__(self, num_symbols, batch_size, seq_length,
                  embedding_size, num_layers, conv_size, num_convs,
-                 output_projection=None):
+                 output_projection=None, name=None):
         self.num_symbols = num_symbols
         self.batch_size = batch_size
         self.seq_length = seq_length
@@ -47,6 +50,7 @@ class QRNN(object):
         self.num_convs = num_convs
         self.output_projection = output_projection
         self.initializer = tf.random_normal_initializer()
+        self.name = name
         self._init_vars()
 
     def get_embeddings(self, embeddings, word_ids):
@@ -100,7 +104,8 @@ class QRNN(object):
     # filter_width = embedding_size
 
     def conv_layer(self, layer_id, inputs, input_shape):
-        with tf.variable_scope("QRNN/Variable/Convolution/"+str(layer_id),
+        with tf.variable_scope("QRNN/"+self.name +
+                               "/Variable/Convolution/"+str(layer_id),
                                reuse=True):
             filter_shape = self._get_filter_shape(input_shape)
             W = tf.get_variable('W', filter_shape,
@@ -133,7 +138,8 @@ class QRNN(object):
         if seq_len is None:
             seq_len = self.seq_length
         pooling = self.fo_pool if pool else lambda x, y, z, seq_len: (x, y, z)
-        with tf.variable_scope("QRNN/Variable/Conv_w_enc_out/"+str(layer_id),
+        with tf.variable_scope("QRNN/"+self.name +
+                               "/Variable/Conv_w_enc_out/"+str(layer_id),
                                reuse=True):
             v_shape = (self.num_convs, self.num_convs*3)
             V = tf.get_variable('V', v_shape,
@@ -176,7 +182,8 @@ class QRNN(object):
         if seq_len is None:
             seq_len = self.seq_length
         # input dim [batch, seq_len, num_convs]
-        with tf.variable_scope('QRNN/Conv_with_attention/', reuse=True):
+        with tf.variable_scope('QRNN/'+self.name +
+                               '/Conv_with_attention/', reuse=True):
             attn_weight_shape = [self.num_convs, self.num_convs]
 
             W_k = tf.get_variable('W_k', attn_weight_shape,
@@ -215,7 +222,7 @@ class QRNN(object):
     def transform_output(self, inputs):
         # input dim list of [batch, num_convs]
         shape = (self.num_convs, self.num_symbols)
-        with tf.variable_scope('QRNN/Transform_output'):
+        with tf.variable_scope('QRNN/'+self.name+'/Transform_output'):
             W = tf.get_variable('W', shape,
                                 initializer=self.initializer)
             b = tf.get_variable('b', [self.num_symbols],
@@ -230,7 +237,8 @@ class QRNN(object):
                                      input_shape, c_prev, pool=True):
         seq_len = self.conv_size
         pooling = self.fo_pool if pool else lambda v, w, x, y, z: (v, w, x)
-        with tf.variable_scope("QRNN/Variable/Conv_w_enc_out/"+str(layer_id),
+        with tf.variable_scope("QRNN/"+self.name +
+                               "/Variable/Conv_w_enc_out/"+str(layer_id),
                                reuse=True):
             v_shape = (self.num_convs, self.num_convs*3)
             V = tf.get_variable('V', v_shape,
@@ -266,7 +274,8 @@ class QRNN(object):
                                  input_shape, c_prev):
         seq_len = self.conv_size
         # input dim [batch, seq_len, num_convs]
-        with tf.variable_scope('QRNN/Conv_with_attention/', reuse=True):
+        with tf.variable_scope('QRNN/'+self.name +
+                               '/Conv_with_attention/', reuse=True):
             attn_weight_shape = [self.num_convs, self.num_convs]
 
             W_k = tf.get_variable('W_k', attn_weight_shape,
@@ -309,10 +318,10 @@ def init_encoder_and_decoder(num_encoder_symbols, num_decoder_symbols,
                              embedding_size, num_layers, conv_size, num_convs,
                              output_projection):
     encoder = QRNN(num_encoder_symbols, batch_size, enc_seq_length,
-                   embedding_size, num_layers, conv_size, num_convs)
+                   embedding_size, num_layers, conv_size, num_convs, 'enc')
     decoder = QRNN(num_decoder_symbols, batch_size, dec_seq_length,
                    embedding_size, num_layers, conv_size, num_convs,
-                   output_projection)
+                   output_projection, 'dec')
     return encoder, decoder
 
 

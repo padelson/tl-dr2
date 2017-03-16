@@ -35,5 +35,13 @@ if __name__ == '__main__':
     if len(sys.argv) != 1:
         print 'provide glove vec dims you want'
         sys.exit(0)
+    print 'getting encoder vocab'
     enc_vocab = load_and_split_file('enc_vocab.txt')
-    glove_path = '/datadrive/glove/'
+    glove_path = '/datadrive/glove/glove.6b.'+sys.argv[1]+'d.txt'
+    vecs = get_glove_vecs(enc_vocab, glove_path)
+    write_results(vecs, sys.argv[1], 'enc')
+    print 'getting decoder vocab'
+    dec_vocab = load_and_split_file('enc_vocab.txt')
+    glove_path = '/datadrive/glove/glove.6b.'+sys.argv[1]+'d.txt'
+    vecs = get_glove_vecs(dec_vocab, glove_path)
+    write_results(vecs, sys.argv[1], 'dec')

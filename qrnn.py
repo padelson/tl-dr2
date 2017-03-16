@@ -306,7 +306,7 @@ class QRNN(object):
 
             # calculate attention
             enc_final_state = encode_outputs[-1]
-            H = [tf.fill(tf.pack([tf.shape(Z)[0], tf.shape(Z)[2]]), 0.0)]
+            H = []
             C = [c_prev]
             for i in range(0, seq_len-1):
                 c_i = tf.mul(F[:, i, :], C[-1]) + \

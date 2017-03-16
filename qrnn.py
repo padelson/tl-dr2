@@ -40,7 +40,7 @@ class QRNN(object):
 
     def __init__(self, num_symbols, batch_size, seq_length,
                  embedding_size, num_layers, conv_size, num_convs,
-                 output_projection=None, name=None):
+                 output_projection=None, name=''):
         self.num_symbols = num_symbols
         self.batch_size = batch_size
         self.seq_length = seq_length

@@ -341,7 +341,7 @@ class QRNN(object):
 def init_encoder_and_decoder(num_encoder_symbols, num_decoder_symbols,
                              batch_size, enc_seq_length, dec_seq_length,
                              embedding_size, num_layers, conv_size, num_convs,
-                             output_projection, center_conv):
+                             output_projection):
     encoder = QRNN(num_encoder_symbols, batch_size, enc_seq_length,
                    embedding_size, num_layers/2, conv_size, num_convs, 'enc')
     decoder = QRNN(num_decoder_symbols, batch_size, dec_seq_length,
@@ -351,7 +351,7 @@ def init_encoder_and_decoder(num_encoder_symbols, num_decoder_symbols,
 
 
 def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
-              feed_prev, embeddings):
+              feed_prev, embeddings, center_conv=False):
     # inputs are lists of placeholders, each one is shape [None]
     # self.enc_input_size = len(encoder_inputs)
     # self.dec_input_size = len(decoder_inputs)
@@ -365,7 +365,8 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
     for i in range(encoder.num_layers):
         inputs = embedded_enc_inputs if i == 0 else encode_outputs[-1]
         input_shape = encoder.embedding_size if i == 0 else encoder.num_convs
-        encode_outputs.append(encoder.conv_layer(i, inputs, input_shape)[0])
+        encode_outputs.append(encoder.conv_layer(i, inputs, input_shape,
+                                                 center_conv)[0])
     encode_outputs = [tf.reverse(e, [False, True, False])
                       for e in encode_outputs]
     decoder_inputs = tf.transpose(tf.pack(decoder_inputs))

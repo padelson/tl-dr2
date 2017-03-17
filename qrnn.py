@@ -291,7 +291,7 @@ class QRNN(object):
             F = F_conv + tf.expand_dims(F_v, 1)
             O = O_conv + tf.expand_dims(O_v, 1)
             return pooling(tf.tanh(Z), tf.sigmoid(F),
-                           tf.sigmoid(O), seq_len-1, c_prev)
+                           tf.sigmoid(O), seq_len-self.conv_size+1, c_prev)
 
     def eval_conv_with_attention(self, layer_id, encode_outputs, inputs,
                                  input_shape, c_prev):

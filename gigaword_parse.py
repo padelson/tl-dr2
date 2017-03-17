@@ -63,6 +63,10 @@ def getHeadline(f):
 
 def process(dirname=".", filename="example_data", file_num=0):
     f = open(dirname + '/' + filename, 'r')
+    if file_num % 2 == 0:
+        file_num = file_num / 2
+    else:
+        return
     if file_num % 20 == 0:
         h = open('/datadrive/gigaword_parsed/dev/headlines/' + filename, 'w')
         t = open('/datadrive/gigaword_parsed/dev/texts/' + filename, 'w')

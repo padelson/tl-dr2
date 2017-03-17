@@ -8,19 +8,21 @@ import config
 import data
 import utils
 
+import rnn
 from qrnn import init_encoder_and_decoder, seq2seq_f
 
 
 class Summarizer(object):
     def _seq_f(self, encoder_inputs, decoder_inputs, do_decode):
         if self.model == 'rnn':
-            return tf.nn.seq2seq.embedding_attention_seq2seq(
+            return rnn.seq2seq(
                 encoder_inputs,
                 decoder_inputs,
                 self.cell,
                 num_encoder_symbols=self.enc_vocab,
                 num_decoder_symbols=self.dec_vocab,
                 embedding_size=config.HIDDEN_SIZE,
+                embeddings=self.embeddings,
                 output_projection=self.output_projection,
                 feed_previous=do_decode)
 

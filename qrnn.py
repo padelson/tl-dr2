@@ -133,7 +133,7 @@ class QRNN(object):
                                       "CONSTANT")
             else:
                 assert self.conv_size % 2 == 1
-                num_pads = self.conv_size - 2
+                num_pads = (self.conv_size - 1) / 2
                 padded_input = tf.pad(tf.expand_dims(inputs, -1),
                                       [[0, 0], [num_pads, num_pads],
                                        [0, 0], [0, 0]],

@@ -40,7 +40,7 @@ class QRNN(object):
 
     def __init__(self, num_symbols, batch_size, seq_length,
                  embedding_size, num_layers, conv_size, num_convs,
-                 output_projection=None, name='', center_conv=False):
+                 output_projection=None, name=''):
         self.num_symbols = num_symbols
         self.batch_size = batch_size
         self.seq_length = seq_length
@@ -51,7 +51,6 @@ class QRNN(object):
         self.output_projection = output_projection
         self.initializer = tf.random_normal_initializer()
         self.name = name
-        self.center_conv = center_conv
         self._init_vars()
 
     def get_embeddings(self, embeddings, word_ids):
@@ -115,7 +114,7 @@ class QRNN(object):
     # in_width = embedding_size
     # filter_width = embedding_size
 
-    def conv_layer(self, layer_id, inputs, input_shape):
+    def conv_layer(self, layer_id, inputs, input_shape, center_conv=False):
         with tf.variable_scope("QRNN/"+self.name +
                                "/Variable/Convolution/"+str(layer_id),
                                reuse=True):
@@ -124,7 +123,7 @@ class QRNN(object):
                                 initializer=self.initializer, dtype=tf.float32)
             b = tf.get_variable('b', [self.num_convs*3],
                                 initializer=self.initializer, dtype=tf.float32)
-            if not self.center_conv:
+            if not center_conv:
                 num_pads = self.conv_size - 1
                 # input dims ~should~ now be [batch_size, sequence_length,
                 #                             embedding_size, 1]
@@ -292,7 +291,7 @@ class QRNN(object):
             F = F_conv + tf.expand_dims(F_v, 1)
             O = O_conv + tf.expand_dims(O_v, 1)
             return pooling(tf.tanh(Z), tf.sigmoid(F),
-                           tf.sigmoid(O), seq_len-self.conv_size+1, c_prev)
+                           tf.sigmoid(O), seq_len-1, c_prev)
 
     def eval_conv_with_attention(self, layer_id, encode_outputs, inputs,
                                  input_shape, c_prev):
@@ -344,8 +343,7 @@ def init_encoder_and_decoder(num_encoder_symbols, num_decoder_symbols,
                              embedding_size, num_layers, conv_size, num_convs,
                              output_projection, center_conv):
     encoder = QRNN(num_encoder_symbols, batch_size, enc_seq_length,
-                   embedding_size, num_layers/2, conv_size, num_convs, 'enc',
-                   center_conv)
+                   embedding_size, num_layers/2, conv_size, num_convs, 'enc')
     decoder = QRNN(num_decoder_symbols, batch_size, dec_seq_length,
                    embedding_size, num_layers/2, conv_size, num_convs,
                    output_projection, 'dec')

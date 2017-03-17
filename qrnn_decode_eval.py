@@ -64,7 +64,7 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                                 layer_inputs[j],
                                 input_shape,
                                 layer_outputs[j])
-                    layer_inputs[j+1] = advance_step_input(layer_inputs[j],
+                    layer_inputs[j+1] = advance_step_input(layer_inputs[j+1],
                                                            h_t)
                     layer_outputs[j] = c_t
                 else:

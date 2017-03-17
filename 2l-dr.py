@@ -15,6 +15,7 @@ def setup_argparse():
     parser.add_argument('--data_path')
     parser.add_argument('--input_path')
     parser.add_argument('--sess_name')
+    parser.add_argument('--center_conv', action='store_true')
     parser.add_argument('--pretrained', action='store_true')
     parser.add_argument('--model', choices={'rnn', 'qrnn'})
     return parser
@@ -27,7 +28,7 @@ if __name__ == '__main__':
         exit(0)
     if args.train:
         summarizer = Summarizer(args.data_path, True, args.sess_name,
-                                args.model, args.pretrained)
+                                args.model, args.pretrained, args.center_conv)
         summarizer.train()
     if args.sum:
         summarizer = Summarizer(args.data_path, False, args.sess_name,

@@ -35,7 +35,8 @@ class Summarizer(object):
                                                     config.NUM_LAYERS,
                                                     config.CONV_SIZE,
                                                     config.NUM_CONVS,
-                                                    self.output_projection)
+                                                    self.output_projection,
+                                                    self.center_conv)
         return seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
                          do_decode, self.embeddings)
 
@@ -205,12 +206,14 @@ class Summarizer(object):
                     print('Created opt for bucket {}'.format(bucket))
         print 'Took', time.time() - start, 'seconds'
 
-    def __init__(self, data_path, create_opt, sess_name, model, pretrained):
+    def __init__(self, data_path, create_opt, sess_name, model, pretrained,
+                 center_conv=False):
         self.data_path = data_path
         self.create_opt = create_opt
         self.sess_name = sess_name
         self.model = model
         self.pretrained = pretrained
+        self.center_conv = center_conv
         print '###Initializing', model, 'model'
 
         self._setup_sess_dir()

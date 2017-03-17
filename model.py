@@ -213,7 +213,8 @@ class Summarizer(object):
         self.model = model
         self.pretrained = pretrained
         self.center_conv = center_conv
-        self.lr = config.LR
+        self.lr = config.L
+        self.dev_loss = None
         print '###Initializing', model, 'model'
 
         self._setup_sess_dir()

@@ -311,6 +311,7 @@ class Summarizer(object):
             if sum([self.dev_loss[i] < bucket_losses[i]
                     for i in range(len(bucket_losses))]) > 0:
                 self.lr /= 2
+                print 'Learning rate adjusted'
         self.dev_loss = bucket_losses
         if test:
             path += '_test'
@@ -344,6 +345,7 @@ class Summarizer(object):
                 sess.run(tf.assign(self.epoch, epoch))
                 print '\n', 'Epoch:', epoch+1
                 print 'Bucket sizes', bucket_sizes
+                print 'Learning rate:', self.lr
                 if sum(bucket_sizes) > 1:
                     prog = utils.Progbar(target=bucket_sizes[bucket_index])
                 end_while = False

@@ -153,10 +153,16 @@ def get_batch(data_buckets, bucket_index, buckets, batch_size, iteration=0):
 
 
 def process_input(inputs, buckets, enc_dict, dec_dict):
-    txt_size = len(inputs)
-    bucket_index = _get_bucket((txt_size, 0), buckets)
-    bucket = buckets[bucket_index]
-    hl_vec, txt_vec, mask = _one_hot_and_mask_data('', inputs, bucket,
-                                                   enc_dict, dec_dict)
-    input_data = ([txt_vec], [hl_vec], [mask])
-    return bucket_index, input_data
+    texts = []
+    headlines = []
+    masks = []
+    for inp in range(len(inputs)):
+        txt_size = len(inp)
+        bucket_index = _get_bucket((txt_size, 0), buckets)
+        bucket = buckets[bucket_index]
+        hl_vec, txt_vec, mask = _one_hot_and_mask_data('', inp, bucket,
+                                                       enc_dict, dec_dict)
+        texts.append(txt_vec)
+        headlines.append(hl_vec)
+        masks.append(mask)
+    return bucket_index, (texts, headlines, masks)

@@ -28,7 +28,6 @@ class Summarizer(object):
         dec_seq_length = len(decoder_inputs)
         encoder, decoder = init_encoder_and_decoder(self.enc_vocab,
                                                     self.dec_vocab,
-                                                    config.BATCH_SIZE,
                                                     enc_seq_length,
                                                     dec_seq_length,
                                                     config.HIDDEN_SIZE,
@@ -95,6 +94,7 @@ class Summarizer(object):
         self.decoder_masks = []
         self.feed_prev_placeholder = tf.placeholder(tf.bool, shape=[],
                                                     name='feed_prev')
+        self.learning_rate = tf.placeholder(tf.float32, shape=[], name='lr')
         for i in xrange(config.BUCKETS[-1][0]):  # Last bucket is the biggest.
             self.encoder_inputs.append(tf.placeholder(tf.int32, shape=[None],
                                        name='encoder{}'.format(i)))
@@ -213,6 +213,7 @@ class Summarizer(object):
         self.model = model
         self.pretrained = pretrained
         self.center_conv = center_conv
+        self.lr = config.LR
         print '###Initializing', model, 'model'
 
         self._setup_sess_dir()
@@ -232,7 +233,7 @@ class Summarizer(object):
             print "Initializing fresh parameters"
 
     def run_step(self, sess, encoder_inputs, decoder_inputs, decoder_masks,
-                 bucket_id, update_params):
+                 batch_size, bucket_id, update_params):
         encoder_size, decoder_size = config.BUCKETS[bucket_id]
         input_feed = {}
         for step in xrange(encoder_size):
@@ -241,7 +242,8 @@ class Summarizer(object):
             input_feed[self.decoder_inputs[step].name] = decoder_inputs[step]
             input_feed[self.decoder_masks[step].name] = decoder_masks[step]
         last_target = self.decoder_inputs[decoder_size].name
-        input_feed[last_target] = np.zeros([config.BATCH_SIZE], dtype=np.int32)
+        input_feed[last_target] = np.zeros([batch_size], dtype=np.int32)
+        input_feed[self.learning_rate] = self.lr
         input_feed[self.feed_prev_placeholder] = not update_params
         # output feed: depends on whether we do a backward step or not.
         if update_params:
@@ -259,6 +261,7 @@ class Summarizer(object):
             return None, outputs[0], outputs[1:]  # No grad norm, loss, outputs
 
     def evaluate(self, sess, train_losses, iteration, test=False):
+        bucket_loss_texts = []
         bucket_losses = []
         summaries = []
         eval_iter = 0
@@ -284,6 +287,7 @@ class Summarizer(object):
                                                             encoder_inputs,
                                                             decoder_inputs,
                                                             decoder_masks,
+                                                            config.BATCH_SIZE,
                                                             bucket_index,
                                                             False)
                 bucket_loss += step_loss
@@ -299,14 +303,20 @@ class Summarizer(object):
             loss_text = 'Test bucket:', bucket_index, 'Avg Loss:', \
                 (bucket_loss / bucket_count)
             print loss_text
-            bucket_losses.append(loss_text)
+            bucket_losses.append(bucket_loss)
+            bucket_loss_texts.append(loss_text)
         path = os.path.join(self.results_path,
                             'iter_' + str(iteration))
+        if self.dev_loss is not None:
+            if sum([self.dev_loss[i] < bucket_losses[i]
+                    for i in range(len(bucket_losses))]) > 0:
+                self.lr /= 2
+        self.dev_loss = bucket_losses
         if test:
             path += '_test'
         data.make_dir(path)
         gt_path = self.test_headlines_path if test else self.dev_headlines_path
-        utils.write_results(summaries, avg_loss, bucket_losses,
+        utils.write_results(summaries, avg_loss, bucket_loss_texts,
                             path, gt_path)
         print 'Wrote results to', path
         print 'Evaluation took', time.time() - eval_start
@@ -350,6 +360,7 @@ class Summarizer(object):
                     _, step_loss, _ = self.run_step(sess, encoder_inputs,
                                                     decoder_inputs,
                                                     decoder_masks,
+                                                    config.BATCH_SIZE,
                                                     bucket_index, True)
                     if next_bucket:
                         step_iter = sess.run(tf.assign(self.bucket_step, 0))
@@ -400,6 +411,7 @@ class Summarizer(object):
         saver = tf.train.Saver()
 
         with tf.Session() as sess:
+            summaries = []
             sess.run(tf.global_variables_initializer())
             self._check_restore_parameters(sess, saver)
             bucket_index, input_data = data.process_input(inputs,
@@ -410,6 +422,10 @@ class Summarizer(object):
             _, _, output_logits = self.run_step(sess, encoder_inputs,
                                                 decoder_inputs,
                                                 decoder_masks,
+                                                len(input_data[0]),
                                                 bucket_index, False)
-            title = self.construct_seq(output_logits)
-            print(title)
+            output_logits = np.array(output_logits)
+            for i in xrange(output_logits.shape[1]):
+                summaries.append(self._construct_seq(
+                                 output_logits[:, i, :]))
+            return summaries

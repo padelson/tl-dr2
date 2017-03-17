@@ -1,10 +1,8 @@
 import tensorflow as tf
 
 
-def get_input_from_state(state, embeddings, output_projection, batch_size):
+def get_input_from_state(state, embeddings, output_projection):
     vocab = tf.nn.xw_plus_b(state, output_projection[0], output_projection[1])
-    # word_ids = [tf.argmax(tf.squeeze(i)) for i
-    #             in tf.split(0, batch_size, vocab)]
     word_ids = tf.argmax(vocab, axis=1)
     return tf.nn.embedding_lookup(embeddings, word_ids)
 
@@ -18,11 +16,12 @@ def advance_step_input(step_input, new_input):
 def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                     embeddings):
     H = []
+    batch_size = tf.shape(embedded_dec_inputs)[0]
     layer_inputs = {}
     layer_outputs = {}
     for i in range(decoder.seq_length):
         if i == 0:
-            step_input = tf.fill([decoder.batch_size, decoder.conv_size,
+            step_input = tf.fill([batch_size, decoder.conv_size,
                                   decoder.embedding_size], 0.0)
             layer_inputs[0] = step_input
             new_input = embedded_dec_inputs[:, 0, :]
@@ -30,7 +29,7 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
             step_input = layer_inputs[0]
             new_input = get_input_from_state(H[-1], embeddings,
                                              decoder.output_projection,
-                                             decoder.batch_size)
+                                             batch_size)
         step_input = advance_step_input(step_input,
                                         tf.expand_dims(new_input, 1))
 
@@ -76,5 +75,5 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                                 layer_outputs[j])
                     H.append(tf.squeeze(h_t))
                     layer_outputs[j] = c_t
-    return tf.reshape(tf.pack(H), [decoder.batch_size,
+    return tf.reshape(tf.pack(H), [batch_size,
                                    decoder.seq_length, decoder.num_convs])

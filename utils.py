@@ -24,12 +24,12 @@ def _eval_metrics(gen_sums_path, gt_sums_path):
 def write_results(summaries, train_loss, losses, filepath, gt_summaries_path):
     dir_path = os.path.join(filepath, 'generated_summaries')
     data.make_dir(dir_path)
-    for i, sums in enumerate(summaries):
-        with open(os.path.join(dir_path, str(i)+'.txt'), 'w') as f:
-            f.write(sums+'\n')
+    # for i, sums in enumerate(summaries):
+    #     with open(os.path.join(dir_path, str(i)+'.txt'), 'w') as f:
+    #         f.write(sums+'\n')
     # metrics_results = _eval_metrics(dir_path, gt_summaries_path)
     with open(os.path.join(filepath, 'log'), 'w') as f:
-        f.write('Train loss: ' + str(train_loss))
+        f.write('Avg Train loss: ' + str(train_loss))
         for loss in losses:
             f.write(str(loss) + '\n')
         f.write('\n' * 3)

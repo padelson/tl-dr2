@@ -2,9 +2,7 @@
 tl-dr (abstractive text summarization) take 2
 
 ## TODOs
--   fix sentence construction
--   fix epoch / iteration counting
--   preprocess data (paritition into train, dev, test, and encode into vocab)
+-   finish QRNN
 -   implement utils eval_metrics (i.e. run ROUGE)
 -   fix failed call to cuInit: CUDA_ERROR_UNKNOWN
 -   make sure it works lol (esp summarize())

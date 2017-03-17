@@ -38,11 +38,10 @@ class QRNN(object):
             tf.get_variable('b_o', [self.num_convs],
                             initializer=self.initializer, dtype=tf.float32)
 
-    def __init__(self, num_symbols, batch_size, seq_length,
+    def __init__(self, num_symbols, seq_length,
                  embedding_size, num_layers, conv_size, num_convs,
                  output_projection=None, name=''):
         self.num_symbols = num_symbols
-        self.batch_size = batch_size
         self.seq_length = seq_length
         self.embedding_size = embedding_size
         self.num_layers = num_layers
@@ -339,12 +338,12 @@ class QRNN(object):
 
 
 def init_encoder_and_decoder(num_encoder_symbols, num_decoder_symbols,
-                             batch_size, enc_seq_length, dec_seq_length,
+                             enc_seq_length, dec_seq_length,
                              embedding_size, num_layers, conv_size, num_convs,
                              output_projection):
-    encoder = QRNN(num_encoder_symbols, batch_size, enc_seq_length,
+    encoder = QRNN(num_encoder_symbols, enc_seq_length,
                    embedding_size, num_layers/2, conv_size, num_convs, 'enc')
-    decoder = QRNN(num_decoder_symbols, batch_size, dec_seq_length,
+    decoder = QRNN(num_decoder_symbols, dec_seq_length,
                    embedding_size, num_layers/2, conv_size, num_convs,
                    output_projection, 'dec')
     return encoder, decoder

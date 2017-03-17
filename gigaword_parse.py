@@ -175,9 +175,9 @@ def build_vocab():
             t.close()
 
     # count_words(None, vocab, dist)
-    top20000 = sorted(vocab.items(), key=lambda x: x[1], reverse=True)[:20000]
+    top20000 = sorted(vocab.items(), key=lambda x: x[1], reverse=True)[:70000]
     top20000 = [x[0] for x in top20000]
-    vecs, top10000 = get_vecs(top20000, 10000)
+    vecs, top10000 = get_vecs(top20000, 50000)
     with open('embeddings.txt', 'w') as embeddings_f:
         embeddings_f.write(json.dumps(vecs))
     for entry in top10000:

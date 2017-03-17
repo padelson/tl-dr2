@@ -28,8 +28,7 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
         else:
             step_input = layer_inputs[0]
             new_input = get_input_from_state(H[-1], embeddings,
-                                             decoder.output_projection,
-                                             batch_size)
+                                             decoder.output_projection)
         step_input = advance_step_input(step_input,
                                         tf.expand_dims(new_input, 1))
 

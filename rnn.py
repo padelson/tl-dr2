@@ -37,7 +37,7 @@ def seq2seq(encoder_inputs,
                 encoder_state,
                 attention_states,
                 cell,
-                loop_function=loop_function)
+                loop_function=loop_function)[0]
 
     def seq_with_previous():
         with tf.variable_scope(tf.get_variable_scope(), reuse=None):
@@ -47,4 +47,4 @@ def seq2seq(encoder_inputs,
         with tf.variable_scope(tf.get_variable_scope(), reuse=True):
             return seq2seq_f(False)
 
-    return tf.cond(feed_previous, seq_with_previous, seq_without_previous)
+    return tf.cond(feed_previous, seq_with_previous, seq_without_previous), None

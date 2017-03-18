@@ -23,9 +23,6 @@ def setup_argparse():
 if __name__ == '__main__':
     parser = setup_argparse()
     args = parser.parse_args()
-    if args.model == 'rnn' and args.pretrained:
-        print 'Pretrained GloVe vectors only available for QRNN'
-        exit(0)
     if args.train:
         summarizer = Summarizer(args.data_path, True, args.sess_name,
                                 args.model, args.pretrained, args.center_conv)

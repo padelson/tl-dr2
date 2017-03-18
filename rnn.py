@@ -32,18 +32,20 @@ def seq2seq(encoder_inputs,
                               for d in decoder_inputs]
 
         def decode_with_attention(feed_prev):
-            loop_function = tf.nn.seq2seq._extract_argmax_and_embed(
-                            embeddings,
-                            output_projection,
-                            True) \
-                if feed_prev else None
+            reuse = None if feed_prev else True
+            with tf.variable_scope(tf.get_variable_scope(), reuse=reuse):
+                loop_function = tf.nn.seq2seq._extract_argmax_and_embed(
+                                embeddings,
+                                output_projection,
+                                True) \
+                    if feed_prev else None
 
-            o, s = tf.nn.seq2seq.attention_decoder(embedded_dec_input,
-                                                   encoder_state,
-                                                   attention_states,
-                                                   cell,
-                                                   loop_function=loop_function)
-            return o
+                o, s = tf.nn.seq2seq.attention_decoder(embedded_dec_input,
+                                                       encoder_state,
+                                                       attention_states,
+                                                       cell,
+                                                       loop_function=loop_function)
+                return o
 
         outputs = tf.cond(feed_previous, lambda: decode_with_attention(True),
                           lambda: decode_with_attention(False))

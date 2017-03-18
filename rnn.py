@@ -34,7 +34,7 @@ def seq2seq(encoder_inputs,
                 loop_function = tf.nn.seq2seq._extract_argmax_and_embed(
                                     embeddings,
                                     output_projection,
-                                    True) if feed_previous else None
+                                    True) if feed_prev_bool else None
                 embedded_dec_inputs = [tf.nn.embedding_lookup(embeddings, i)
                                        for i in decoder_inputs]
                 outputs, state = tf.nn.seq2seq.attention_decoder(

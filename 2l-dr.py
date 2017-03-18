@@ -30,4 +30,6 @@ if __name__ == '__main__':
     if args.sum:
         summarizer = Summarizer(args.data_path, False, args.sess_name,
                                 args.model, args.pretrained)
-        summarizer.summarize(args.input_path)
+        with open(args.input_path) as f:
+            inputs = f.read()
+        summarizer.summarize(inputs)

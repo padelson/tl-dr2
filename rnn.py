@@ -28,7 +28,7 @@ def seq2seq(encoder_inputs,
 
         # decode
         # embedded_dec_input = tf.nn.embedding_lookup(embeddings, decoder_inputs)
-        embedded_dec_input = [tf.nn.embedding_lookup(d)
+        embedded_dec_input = [tf.nn.embedding_lookup(embeddings, d)
                               for d in decoder_inputs]
 
         def decode_with_attention(feed_prev):

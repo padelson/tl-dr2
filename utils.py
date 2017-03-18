@@ -3,8 +3,6 @@ import sys
 import time
 import numpy as np
 
-from pyrouge import Rouge155
-
 import data
 
 

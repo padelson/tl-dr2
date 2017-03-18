@@ -133,19 +133,18 @@ class Summarizer(object):
         single_cell = tf.nn.rnn_cell.GRUCell(config.HIDDEN_SIZE)
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
-        if self.model == 'qrnn':
-            embed_init = tf.contrib.layers.xavier_initializer()
-            if self.pretrained:
-                pad = tf.zeros([1, config.HIDDEN_SIZE])
-                flags = tf.Variable(embed_init([3, config.HIDDEN_SIZE],
-                                    dtype=tf.float32))
-                embeddings = tf.constant(data.load_embeddings(self.data_path),
-                                         dtype=tf.float32)
-                self.embeddings = tf.concat(0, [pad, flags, embeddings])
-            else:
-                self.embeddings = tf.Variable(embed_init([self.enc_vocab,
-                                                          config.HIDDEN_SIZE]),
-                                              dtype=tf.float32)
+        embed_init = tf.contrib.layers.xavier_initializer()
+        if self.pretrained:
+            pad = tf.zeros([1, config.HIDDEN_SIZE])
+            flags = tf.Variable(embed_init([3, config.HIDDEN_SIZE],
+                                dtype=tf.float32))
+            embeddings = tf.constant(data.load_embeddings(self.data_path),
+                                     dtype=tf.float32)
+            self.embeddings = tf.concat(0, [pad, flags, embeddings])
+        else:
+            self.embeddings = tf.Variable(embed_init([self.enc_vocab,
+                                                      config.HIDDEN_SIZE]),
+                                          dtype=tf.float32)
         feed_prev = self.feed_prev_placeholder
         self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
                                     self.encoder_inputs,

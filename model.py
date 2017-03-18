@@ -130,7 +130,7 @@ class Summarizer(object):
                                               self.dec_vocab)
         self.softmax_loss = sampled_loss
 
-        single_cell = tf.nn.rnn_cell.GRUCell(config.HIDDEN_SIZE)
+        single_cell = tf.nn.rnn_cell.GRUCell(config.NUM_CONVS)
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
         embed_init = tf.contrib.layers.xavier_initializer()

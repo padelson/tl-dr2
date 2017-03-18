@@ -21,7 +21,7 @@ class Summarizer(object):
                 self.cell,
                 num_encoder_symbols=self.enc_vocab,
                 num_decoder_symbols=self.dec_vocab,
-                embedding_size=config.HIDDEN_SIZE,
+                embedding_size=config.EMBED_SIZE,
                 embeddings=self.embeddings,
                 output_projection=self.output_projection,
                 feed_previous=do_decode)
@@ -32,10 +32,10 @@ class Summarizer(object):
                                                     self.dec_vocab,
                                                     enc_seq_length,
                                                     dec_seq_length,
-                                                    config.HIDDEN_SIZE,
+                                                    config.EMBED_SIZE,
                                                     config.NUM_LAYERS,
                                                     config.CONV_SIZE,
-                                                    config.NUM_CONVS,
+                                                    config.HIDDEN_SIZE,
                                                     self.output_projection)
         return seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
                          do_decode, self.embeddings, self.center_conv)
@@ -115,7 +115,7 @@ class Summarizer(object):
         print 'Creating loss...  ',
         start = time.time()
         if config.NUM_SAMPLES > 0 and config.NUM_SAMPLES < self.dec_vocab:
-            proj_w_size = config.NUM_CONVS
+            proj_w_size = config.HIDDEN_SIZE
             w = tf.get_variable('proj_w', [proj_w_size,
                                            self.dec_vocab])
             b = tf.get_variable('proj_b', [self.dec_vocab])
@@ -129,20 +129,20 @@ class Summarizer(object):
                                               self.dec_vocab)
         self.softmax_loss = sampled_loss
 
-        single_cell = tf.nn.rnn_cell.GRUCell(config.NUM_CONVS)
+        single_cell = tf.nn.rnn_cell.GRUCell(config.HIDDEN_SIZE)
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
         embed_init = tf.contrib.layers.xavier_initializer()
         if self.pretrained:
-            pad = tf.zeros([1, config.HIDDEN_SIZE])
-            flags = tf.Variable(embed_init([3, config.HIDDEN_SIZE],
+            pad = tf.zeros([1, config.EMBED_SIZE])
+            flags = tf.Variable(embed_init([3, config.EMBED_SIZE],
                                 dtype=tf.float32))
             embeddings = tf.constant(data.load_embeddings(self.data_path),
                                      dtype=tf.float32)
             self.embeddings = tf.concat(0, [pad, flags, embeddings])
         else:
             self.embeddings = tf.Variable(embed_init([self.enc_vocab,
-                                                      config.HIDDEN_SIZE]),
+                                                      config.EMBED_SIZE]),
                                           dtype=tf.float32)
         feed_prev = self.feed_prev_placeholder
         self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(

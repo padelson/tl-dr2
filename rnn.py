@@ -4,14 +4,14 @@ import tensorflow as tf
 
 
 def seq2seq(encoder_inputs,
-              decoder_inputs,
-              cell,
-              num_encoder_symbols,
-              num_decoder_symbols,
-              embedding_size,
-              embeddings,
-              output_projection=None,
-              feed_previous=None):
+            decoder_inputs,
+            cell,
+            num_encoder_symbols,
+            num_decoder_symbols,
+            embedding_size,
+            embeddings,
+            output_projection=None,
+            feed_previous=None):
 
     def seq2seq_f(feed_prev):
         with tf.variable_scope('rnn_seq2seq'):
@@ -32,13 +32,19 @@ def seq2seq(encoder_inputs,
                                 output_projection,
                                 True) \
                 if feed_prev else None
-            reuse = None if feed_prev else True
-            with tf.variable_scope(tf.get_variable_scope(), reuse=reuse):
-                return tf.nn.seq2seq.attention_decoder(
-                    embedded_dec_input,
-                    encoder_state,
-                    attention_states,
-                    cell,
-                    loop_function=loop_function)
+            return tf.nn.seq2seq.attention_decoder(
+                embedded_dec_input,
+                encoder_state,
+                attention_states,
+                cell,
+                loop_function=loop_function)
 
-    return tf.cond(feed_previous, seq2seq_f(True), seq2seq_f(False))
+    def seq_with_previous():
+        with tf.variable_scope(tf.get_variable_scope(), reuse=None):
+            return seq2seq_f(True)
+
+    def seq_without_previous():
+        with tf.variable_scope(tf.get_variable_scope(), reuse=True):
+            return seq2seq_f(False)
+
+    return tf.cond(feed_previous, seq_with_previous, seq_without_previous)

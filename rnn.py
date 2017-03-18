@@ -22,7 +22,8 @@ def seq2seq(encoder_inputs,
             attention_states, encoder_state = tf.nn.dynamic_rnn(
                                                 encoder_cell,
                                                 embedded_enc_input,
-                                                dtype=tf.float32)
+                                                dtype=tf.float32,
+                                                time_major=True)
 
             # decode
             embedded_dec_input = [tf.nn.embedding_lookup(embeddings, d)

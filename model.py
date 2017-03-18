@@ -390,7 +390,7 @@ class Summarizer(object):
                         saver.save(sess, os.path.join(self.checkpoint_path,
                                                       'summarizer'),
                                    global_step=iteration)
-                        if iteration == 200 or epoch < 2 \
+                        if iteration == 200 or end_while or epoch < 2 \
                                 or iteration % 2000 == 0:
                             self.evaluate(sess, total_losses, iteration)
                     iteration += 1

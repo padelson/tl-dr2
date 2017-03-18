@@ -43,12 +43,11 @@ def seq2seq(encoder_inputs,
                                                    attention_states,
                                                    cell,
                                                    loop_function=loop_function)
-            return o+[s]
+            return tf.concat(1, [o, tf.expand_dims(s, 1)])
 
         o_s = tf.cond(feed_previous, lambda: decode_with_attention(True),
                       lambda: decode_with_attention(False))
         output_len = len(decoder_inputs)
-        outputs = o_s[:output_len]
-        state_list = o_s[output_len:]
-        state = state_list[0]
+        outputs = o_s[:, :output_len, :]
+        state = tf.squeeze(o_s[: output_len, :])
         return outputs, state

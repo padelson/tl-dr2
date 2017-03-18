@@ -18,7 +18,8 @@ def seq2seq(encoder_inputs,
         encoder_cell = copy.deepcopy(cell)
         embedded_enc_input = tf.nn.embedding_lookup(embeddings, encoder_inputs)
         attention_states, encoder_state = tf.nn.dynamic_rnn(encoder_cell,
-                                                            embedded_enc_input)
+                                                            embedded_enc_input
+                                                            dytpe=tf.float32)
 
         # reshape attention states
         # top_states = [tf.reshape(e, [-1, 1, cell.output_size])

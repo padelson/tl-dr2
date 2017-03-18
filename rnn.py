@@ -43,7 +43,7 @@ def seq2seq(encoder_inputs,
                                                    attention_states,
                                                    cell,
                                                    loop_function=loop_function)
-            return tf.concat(1, [o, tf.expand_dims(s, 1)])
+            return tf.concat(1, [o, s])
 
         o_s = tf.cond(feed_previous, lambda: decode_with_attention(True),
                       lambda: decode_with_attention(False))

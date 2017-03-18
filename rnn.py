@@ -19,8 +19,8 @@ def seq2seq(encoder_inputs,
                                                            embedded_enc_input)
 
         # reshape attention states
-        top_states = [tf.reshape(e, [-1, 1, cell.output_size]
-                                     for e in encoder_outputs)]
+        top_states = [tf.reshape(e, [-1, 1, cell.output_size] \
+                      for e in encoder_outputs)]
         attention_states = tf.concat(top_states, 1)
 
         # decode

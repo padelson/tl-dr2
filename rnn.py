@@ -32,12 +32,13 @@ def seq2seq(encoder_inputs,
                                 output_projection,
                                 True) \
                 if feed_prev else None
-
-            return tf.nn.seq2seq.attention_decoder(
-                embedded_dec_input,
-                encoder_state,
-                attention_states,
-                cell,
-                loop_function=loop_function)
+            reuse = None if feed_prev else True
+            with tf.variable_scope(tf.get_variable_scope(), reuse=reuse):
+                return tf.nn.seq2seq.attention_decoder(
+                    embedded_dec_input,
+                    encoder_state,
+                    attention_states,
+                    cell,
+                    loop_function=loop_function)
 
     return tf.cond(feed_previous, seq2seq_f(True), seq2seq_f(False))

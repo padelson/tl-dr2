@@ -27,7 +27,9 @@ def seq2seq(encoder_inputs,
         # attention_states = tf.concat(top_states, 1)
 
         # decode
-        embedded_dec_input = tf.nn.embedding_lookup(embeddings, decoder_inputs)
+        # embedded_dec_input = tf.nn.embedding_lookup(embeddings, decoder_inputs)
+        embedded_dec_input = [tf.nn.embedding_lookup(d)
+                              for d in decoder_inputs]
 
         def decode_with_attention(feed_prev):
             loop_function = tf.nn.seq2seq._extract_argmax_and_embed(

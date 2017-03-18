@@ -3,7 +3,7 @@ import copy
 import tensorflow as tf
 
 
-def seq2seq_f(encoder_inputs,
+def seq2seq(encoder_inputs,
               decoder_inputs,
               cell,
               num_encoder_symbols,
@@ -13,7 +13,7 @@ def seq2seq_f(encoder_inputs,
               output_projection=None,
               feed_previous=None):
 
-    def seq2seq(feed_prev):
+    def seq2seq_f(feed_prev):
         with tf.variable_scope('rnn_seq2seq'):
             # encode
             encoder_cell = copy.deepcopy(cell)
@@ -40,4 +40,4 @@ def seq2seq_f(encoder_inputs,
                 cell,
                 loop_function=loop_function)
 
-    return tf.cond(feed_previous, seq2seq(True), seq2seq(False))
+    return tf.cond(feed_previous, seq2seq_f(True), seq2seq_f(False))

@@ -52,4 +52,4 @@ def seq2seq(encoder_inputs,
         # output_len = len(decoder_inputs)
         # outputs = o_s[:, :output_len, :]
         # state = tf.squeeze(o_s[: output_len, :])
-        return outputs
+        return outputs, None

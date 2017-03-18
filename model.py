@@ -115,8 +115,7 @@ class Summarizer(object):
         print 'Creating loss...  ',
         start = time.time()
         if config.NUM_SAMPLES > 0 and config.NUM_SAMPLES < self.dec_vocab:
-            proj_w_size = config.NUM_CONVS if self.model == 'qrnn' \
-                else config.HIDDEN_SIZE
+            proj_w_size = config.NUM_CONVS
             w = tf.get_variable('proj_w', [proj_w_size,
                                            self.dec_vocab])
             b = tf.get_variable('proj_b', [self.dec_vocab])

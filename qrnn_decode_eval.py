@@ -56,9 +56,10 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                     H.append(tf.squeeze(h_t[:, -1:, :]))
                     layer_outputs[j] = c_t
             else:
+                input_shape = decoder.embedding_size if j == 0 else \
+                    decoder.num_convs
                 if j < decoder.num_layers-1:
-                    input_shape = decoder.embedding_size if j == 0 else \
-                        decoder.num_convs
+
                     h_t, c_t = decoder.eval_conv_with_encode_output(
                                 j,
                                 enc_out,
@@ -73,7 +74,7 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                                 j,
                                 encode_outputs,
                                 layer_inputs[j],
-                                decoder.num_convs,
+                                input_shape,
                                 layer_outputs[j])
                     H.append(tf.squeeze(h_t))
                     layer_outputs[j] = c_t

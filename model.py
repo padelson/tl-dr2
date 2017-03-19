@@ -302,7 +302,7 @@ class Summarizer(object):
             if bucket_count == 0:
                 print 'Test: empty bucket', bucket_index
                 continue
-            bucket_loss = 0
+            bucket_loss = []
             while True:
                 # get data
                 eval_data = self.test_data if test else self.dev_data
@@ -321,7 +321,7 @@ class Summarizer(object):
                                                             config.BATCH_SIZE,
                                                             bucket_index,
                                                             False)
-                bucket_loss += step_loss
+                bucket_loss.append(step_loss)
                 output_logits = np.array(output_logits)
                 # get summaries
                 for i in xrange(config.BATCH_SIZE):
@@ -333,9 +333,9 @@ class Summarizer(object):
                     break
 
             loss_text = 'Test bucket:', bucket_index, 'Avg Loss:', \
-                (bucket_loss / bucket_count)
+                (sum(bucket_loss) / len(bucket_loss))
             print loss_text
-            bucket_losses.append(bucket_loss)
+            bucket_losses.append(sum(bucket_loss))
             bucket_loss_texts.append(loss_text)
 
         path = os.path.join(self.results_path,

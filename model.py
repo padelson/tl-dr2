@@ -411,14 +411,6 @@ class Summarizer(object):
                         step_iter = sess.run(tf.assign(self.bucket_step, 0))
                         bucket_index = sess.run(tf.assign(self.bucket_index,
                                                           bucket_index+1))
-                        if sum(bucket_sizes) > 1:
-                            print  # update progress
-                            prog.update(bucket_sizes[bucket_index-1],
-                                        [("train loss", step_loss),
-                                         ('batch runtime',
-                                          time.time() - batch_start)])
-                            new_bucket = bucket_sizes[bucket_index]
-                            prog = utils.Progbar(target=new_bucket)
                     else:
                         step_iter = sess.run(tf.assign(self.bucket_step,
                                                        step_iter+1))
@@ -426,6 +418,14 @@ class Summarizer(object):
                         end_while = True
                         bucket_index = sess.run(tf.assign(self.bucket_index,
                                                           0))
+                    if next_bucket and sum(bucket_sizes) > 1:
+                        print  # update progress
+                        prog.update(bucket_sizes[bucket_index-1],
+                                    [("train loss", step_loss),
+                                     ('batch runtime',
+                                      time.time() - batch_start)])
+                        new_bucket = bucket_sizes[bucket_index]
+                        prog = utils.Progbar(target=new_bucket)
                     total_losses.append(step_loss)
 
                     # when to evaluate and save state

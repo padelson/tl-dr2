@@ -143,8 +143,8 @@ class Summarizer(object):
 
         def sampled_loss(inputs, labels):
             labels = tf.reshape(labels, [-1, 1])
-            return tf.nn.sampled_softmax_loss(tf.transpose(w), b, inputs,
-                                              labels, config.NUM_SAMPLES,
+            return tf.nn.sampled_softmax_loss(tf.transpose(w), b, labels,
+                                              inputs, config.NUM_SAMPLES,
                                               self.dec_vocab)
         self.softmax_loss = sampled_loss
 

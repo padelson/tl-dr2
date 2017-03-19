@@ -298,7 +298,7 @@ class Summarizer(object):
         eval_start = time.time()
 
         for bucket_index in xrange(len(config.BUCKETS)):
-            bucket_count = len(self.test_data[bucket_index])
+            bucket_count = len(self.test_data[bucket_index]['enc_input'])
             if bucket_count == 0:
                 print 'Test: empty bucket', bucket_index
                 continue

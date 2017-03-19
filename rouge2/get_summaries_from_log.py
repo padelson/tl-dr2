@@ -17,7 +17,7 @@ def write_summaries(results_path, iter_name, sum_name):
         text = f.read().split('\n')[10:]
         headlines = [t for t in text if text != '']
         for h in headlines:
-            if count % 500 == 0:
+            if count % 10000 == 0:
                 print 'writing #', count
             with open(sum_file_name(count, iter_name, sum_name), 'w') as f:
                 f.write(h[20:])

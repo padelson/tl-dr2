@@ -475,7 +475,7 @@ class Summarizer(object):
             _, _, output_logits = self.run_step(sess, encoder_inputs,
                                                 decoder_inputs,
                                                 decoder_masks,
-                                                len(input_data),
+                                                len(encoder_inputs),
                                                 bucket_index, False)
             # get summaries
             output_logits = np.array(output_logits)

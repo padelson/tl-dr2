@@ -31,7 +31,7 @@ def write_data(set, name):
         else:
             dec_input = bucket['dec_input'][start_i:end_i]
         for headline in dec_input:
-            with open(os.path.join(write_path, str(count)+'.txt', 'w')) as f:
+            with open(os.path.join(write_path, str(count)+'.txt'), 'w') as f:
                 f.write(headline)
                 if count % 500 == 0:
                     print 'writing #', count

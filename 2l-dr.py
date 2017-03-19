@@ -32,4 +32,4 @@ if __name__ == '__main__':
                                 args.model, args.pretrained)
         with open(args.input_path) as f:
             inputs = f.read()
-        summarizer.summarize(inputs)
+        print summarizer.summarize(inputs)

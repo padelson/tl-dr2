@@ -156,7 +156,7 @@ def process_input(inputs, buckets, enc_dict, dec_dict):
     texts = []
     headlines = []
     masks = []
-    for inp in range(len(inputs)):
+    for inp in inputs:
         txt_size = len(inp)
         bucket_index = _get_bucket((txt_size, 0), buckets)
         bucket = buckets[bucket_index]
@@ -165,4 +165,6 @@ def process_input(inputs, buckets, enc_dict, dec_dict):
         texts.append(txt_vec)
         headlines.append(hl_vec)
         masks.append(mask)
-    return bucket_index, (texts, headlines, masks)
+    return bucket_index, (_reshape(texts, bucket[0], len(inputs)),
+                          _reshape(headlines, bucket[1], len(inputs)),
+                          _reshape(masks, bucket[1], len(inputs)))

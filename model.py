@@ -464,7 +464,7 @@ class Summarizer(object):
             sess.run(tf.global_variables_initializer())
             self._check_restore_parameters(sess, saver)
             # get data
-            bucket_index, input_data = data.process_input(inputs,
+            bucket_index, input_data = data.process_input([inputs],
                                                           config.BUCKETS)
             encoder_inputs = input_data[0]
             decoder_inputs = input_data[1]

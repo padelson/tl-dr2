@@ -1,3 +1,6 @@
+'''Data processing for 2l-dr: headline generation (take 2)
+Functions to load dataset and process
+'''
 import json
 import os
 
@@ -7,6 +10,7 @@ import config
 
 
 def _read_and_split_file(path):
+    '''  Open a file and split by newlines  '''
     with open(path) as f:
         result = f.read().split('\n')
         if result[-1] == '':
@@ -15,6 +19,7 @@ def _read_and_split_file(path):
 
 
 def load_embeddings(path):
+    '''  Load word embeddings from file path  '''
     with open(os.path.join(path, 'embeddings.txt')) as f:
         vecs = json.loads(f.read())
         if vecs[-1] == '':
@@ -23,6 +28,7 @@ def load_embeddings(path):
 
 
 def _get_bucket(size, buckets):
+    '''  Find the smallest bucket greater than or equal to the given size.  '''
     for i in range(len(buckets)):
         s1, s2 = size
         b1, b2 = buckets[i]
@@ -32,23 +38,19 @@ def _get_bucket(size, buckets):
 
 
 def _pad_vec(vec, size):
+    '''  Pad vec to be the appropriate size  '''
     return vec + [config.PAD_ID] * (size - len(vec))
 
 
-def _vectorize(vec):
-    # TODO turn indices into one-hot vectors???
-    return vec
-
-
-def _one_hot_and_mask_data(hl, txt, mask_size, enc_dict, dec_dict):
+def _ids_and_mask_data(hl, txt, mask_size, enc_dict, dec_dict):
+    '''  translate headlines and text to word_ids and create mask  '''
     txt_size, hl_size = mask_size
-    hl_vec = _vectorize(_pad_vec([dec_dict['<s>']] +
-                                 [dec_dict.get(w, dec_dict['<unk>'])
-                                 for w in hl.split(' ')] +
-                                 [dec_dict['<\s>']], hl_size))
+    hl_vec = _pad_vec([dec_dict['<s>']] +
+                      [dec_dict.get(w, dec_dict['<unk>'])
+                       for w in hl.split(' ')] + [dec_dict['<\s>']], hl_size)
     txt_vec = _pad_vec([enc_dict.get(w, enc_dict['<unk>'])
                         for w in txt.split(' ')], txt_size)
-    txt_vec = _vectorize(list(reversed(txt_vec)))
+    txt_vec = list(reversed(txt_vec))
     mask = np.ones(hl_size)
     for i in range(len(hl_vec), hl_size):
         mask[i] = 0
@@ -56,20 +58,22 @@ def _one_hot_and_mask_data(hl, txt, mask_size, enc_dict, dec_dict):
 
 
 def init_data_buckets(n):
+    '''  init datasets  '''
     return {i: {'enc_input': [], 'dec_input': [], 'dec_masks': []}
             for i in range(n)}
 
 
 def _bucketize_data(headlines, text, buckets, enc_dict, dec_dict):
+    '''  sort data into appropriate bucket sizes  '''
     data_by_bucket = init_data_buckets(len(buckets))
     for i in range(len(headlines)):
         hl = headlines[i]
         txt = text[i]
         size = (len(txt.split()), len(hl.split()))
         bucket_index = _get_bucket(size, buckets)
-        hl_vec, txt_vec, mask = _one_hot_and_mask_data(hl, txt,
-                                                       buckets[bucket_index],
-                                                       enc_dict, dec_dict)
+        hl_vec, txt_vec, mask = _ids_and_mask_data(hl, txt,
+                                                   buckets[bucket_index],
+                                                   enc_dict, dec_dict)
         data_by_bucket[bucket_index]['enc_input'].append(txt_vec)
         data_by_bucket[bucket_index]['dec_input'].append(hl_vec)
         data_by_bucket[bucket_index]['dec_masks'].append(mask)
@@ -78,6 +82,7 @@ def _bucketize_data(headlines, text, buckets, enc_dict, dec_dict):
 
 
 def load_one_set(data_path, name, buckets, enc_dict, dec_dict):
+    '''  load one subset of the data (train/dev/test)  '''
     headlines = []
     text = []
     headline_path = os.path.join(data_path, name+'/headlines')
@@ -92,6 +97,7 @@ def load_one_set(data_path, name, buckets, enc_dict, dec_dict):
 
 
 def load_data(data_path, buckets):
+    '''  read in data at data_path and sort them into appropriate buckets  '''
     enc_vocab = _read_and_split_file(os.path.join(data_path, 'enc_vocab.txt'))
     dec_vocab = _read_and_split_file(os.path.join(data_path, 'dec_vocab.txt'))
     enc_dict = {enc_vocab[i]: i for i in range(len(enc_vocab))}
@@ -108,7 +114,7 @@ def load_data(data_path, buckets):
 
 
 def make_dir(path):
-    """ Create a directory if there isn't one already. """
+    ''' Create a directory if there isn't one already. '''
     try:
         os.mkdir(path)
     except OSError:
@@ -116,20 +122,13 @@ def make_dir(path):
 
 
 def _reshape(inputs, size, batch_size):
-    """ Create batch-major inputs. Batch inputs are just re-indexed inputs
-    """
-    # batch_inputs = np.array([])
-    # for length_id in xrange(size):
-    #     reindexed = np.array([inputs[batch_id][length_id]
-    #                          for batch_id in xrange(batch_size)],
-    #                          dtype=np.int32)
-    #     np.append(batch_inputs, reindexed, axis=0)
-    # TODO make sure this works
+    ''' Create batch-major inputs. Batch inputs are just re-indexed inputs  '''
     batch_inputs = np.array(inputs).T
     return batch_inputs
 
 
 def get_batch(data_buckets, bucket_index, buckets, batch_size, iteration=0):
+    '''  Get one batch of data from given bucket  '''
     bucket = data_buckets[bucket_index]
     next_bucket = False
     start_i = iteration * batch_size
@@ -153,6 +152,7 @@ def get_batch(data_buckets, bucket_index, buckets, batch_size, iteration=0):
 
 
 def process_input(inputs, buckets, enc_dict, dec_dict):
+    '''  Get word_ids, mask, and bucket for text input  '''
     texts = []
     headlines = []
     masks = []
@@ -160,8 +160,8 @@ def process_input(inputs, buckets, enc_dict, dec_dict):
         txt_size = len(inp)
         bucket_index = _get_bucket((txt_size, 0), buckets)
         bucket = buckets[bucket_index]
-        hl_vec, txt_vec, mask = _one_hot_and_mask_data('', inp, bucket,
-                                                       enc_dict, dec_dict)
+        hl_vec, txt_vec, mask = _ids_and_mask_data('', inp, bucket,
+                                                   enc_dict, dec_dict)
         texts.append(txt_vec)
         headlines.append(hl_vec)
         masks.append(mask)

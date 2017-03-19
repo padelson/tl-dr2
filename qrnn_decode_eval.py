@@ -45,10 +45,13 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                     layer_inputs[j+1] = step_input
                     layer_outputs[j] = c_t
                 else:
+                    input_size = decoder.embedding_size \
+                                if decoder.num_layers == 1 \
+                                else decoder.num_convs
                     h_t, c_t = decoder.conv_with_attention(
                                 j, encode_outputs,
                                 layer_inputs[j],
-                                decoder.num_convs,
+                                input_size,
                                 seq_len=decoder.conv_size)
                     H.append(tf.squeeze(h_t[:, -1:, :]))
                     layer_outputs[j] = c_t

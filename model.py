@@ -1,3 +1,12 @@
+'''Model implementation for 2l-dr: headline generation (take 2)
+in Tensorflow, an encoder-decoder model with attention, using either
+an RNN or QRNN
+
+Based on Google Translate Tensorflow model
+https://github.com/tensorflow/models/blob/master/tutorials/rnn/translate/
+And CS 20SI assignment 3 starter code by Chip Huyen
+https://github.com/chiphuyen/tf-stanford-tutorials/tree/master/assignments/chatbot
+'''
 import os
 import time
 
@@ -14,6 +23,8 @@ from qrnn import init_encoder_and_decoder, seq2seq_f
 
 class Summarizer(object):
     def _seq_f(self, encoder_inputs, decoder_inputs, do_decode):
+        '''  seq2seq function to pass into model_with_buckets()
+        implements an RNN and QRNN implementation  '''
         if self.model == 'rnn':
             return rnn.seq2seq(
                 encoder_inputs,
@@ -41,6 +52,7 @@ class Summarizer(object):
                          do_decode, self.embeddings, self.center_conv)
 
     def _construct_seq(self, output_logits):
+        '''Construct final sequence by taking argmax over the logits'''
         output_logits = np.array(output_logits)
         outputs = [int(np.argmax(logit)) for logit in output_logits]
         # If there is an EOS symbol in outputs, cut them at that point.
@@ -51,6 +63,7 @@ class Summarizer(object):
                          for output in outputs])
 
     def _setup_data(self):
+        '''Load datasets and vocabularies'''
         print 'Setting up data...',
         start = time.time()
         with open(os.path.join(self.sess_dir, 'data_path'), 'w') as f:
@@ -74,21 +87,25 @@ class Summarizer(object):
                                              self.train_data.iteritems()]
 
     def _setup_sess_dir(self):
+        '''Set up session directory.  All outputs from the program go here'''
         print 'Setting up directory for session'
         self.sess_dir = os.path.join('/datadrive', self.sess_name)
         data.make_dir(self.sess_dir)
 
     def _setup_checkpoints(self):
+        '''Initialize path to checkpoints'''
         print 'Setting up checkpoints directory'
         self.checkpoint_path = os.path.join(self.sess_dir, 'checkpoint')
         data.make_dir(self.checkpoint_path)
 
     def _setup_results(self):
+        '''Initialize path to results'''
         print 'Setting up results directory'
         self.results_path = os.path.join(self.sess_dir, 'results')
         data.make_dir(self.results_path)
 
     def _create_placeholders(self):
+        '''Create placeholders for inputs and other parameters'''
         print 'Creating placeholders...  ',
         start = time.time()
         self.encoder_inputs = []
@@ -112,8 +129,11 @@ class Summarizer(object):
         print 'Took', time.time() - start, 'seconds'
 
     def _create_loss(self):
+        '''  Create loss, output projection, RNN cell, embeddings  '''
         print 'Creating loss...  ',
         start = time.time()
+
+        # use output projection if we're using sampled softmax
         if config.NUM_SAMPLES > 0 and config.NUM_SAMPLES < self.dec_vocab:
             proj_w_size = config.HIDDEN_SIZE
             w = tf.get_variable('proj_w', [proj_w_size,
@@ -122,7 +142,6 @@ class Summarizer(object):
             self.output_projection = (w, b)
 
         def sampled_loss(inputs, labels):
-
             labels = tf.reshape(labels, [-1, 1])
             return tf.nn.sampled_softmax_loss(tf.transpose(w), b, inputs,
                                               labels, config.NUM_SAMPLES,
@@ -132,8 +151,10 @@ class Summarizer(object):
         single_cell = tf.nn.rnn_cell.GRUCell(config.HIDDEN_SIZE)
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
+
         embed_init = tf.contrib.layers.xavier_initializer()
         if self.pretrained:
+            # set up variables for special tokens and concat with pretrained
             pad = tf.zeros([1, config.EMBED_SIZE])
             flags = tf.Variable(embed_init([3, config.EMBED_SIZE],
                                 dtype=tf.float32))
@@ -144,6 +165,7 @@ class Summarizer(object):
             self.embeddings = tf.Variable(embed_init([self.enc_vocab,
                                                       config.EMBED_SIZE]),
                                           dtype=tf.float32)
+
         feed_prev = self.feed_prev_placeholder
         self.outputs, self.losses = tf.nn.seq2seq.model_with_buckets(
                                     self.encoder_inputs,
@@ -154,11 +176,10 @@ class Summarizer(object):
                                     lambda x, y: self._seq_f(x, y, feed_prev),
                                     softmax_loss_function=self.softmax_loss
                                     )
+
         # If we use output projection, we need to project outputs for decoding.
         cur = None
         bucket = 0
-
-        def do_nothing(): return cur
 
         def project_outputs():
             if self.output_projection:
@@ -171,12 +192,13 @@ class Summarizer(object):
         for bucket in xrange(len(config.BUCKETS)):
             cur = self.outputs[bucket]
             self.outputs[bucket] = tf.cond(self.feed_prev_placeholder,
-                                           do_nothing,
+                                           lambda: cur,
                                            project_outputs)
 
         print 'Took', time.time() - start, 'seconds'
 
     def _create_optimizer(self):
+        '''  Create optimizers and train ops for each bucket  '''
         print 'Creating optimizer...  ',
         start = time.time()
         with tf.variable_scope('training'):
@@ -226,6 +248,7 @@ class Summarizer(object):
         self._create_optimizer()
 
     def _check_restore_parameters(self, sess, saver):
+        '''  Check if there are parameters to restore for this session  '''
         ckpt = tf.train.get_checkpoint_state(self.checkpoint_path)
         if ckpt and ckpt.model_checkpoint_path:
             print "Loading parameters"
@@ -235,8 +258,11 @@ class Summarizer(object):
 
     def run_step(self, sess, encoder_inputs, decoder_inputs, decoder_masks,
                  batch_size, bucket_id, update_params):
+        '''  Run the model on given inputs once  '''
         encoder_size, decoder_size = config.BUCKETS[bucket_id]
+        # set up input feed
         input_feed = {}
+        # each placeholder holds a timestep
         for step in xrange(encoder_size):
             input_feed[self.encoder_inputs[step].name] = encoder_inputs[step]
         for step in xrange(decoder_size):
@@ -262,6 +288,7 @@ class Summarizer(object):
             return None, outputs[0], outputs[1:]  # No grad norm, loss, outputs
 
     def evaluate(self, sess, train_losses, iteration, test=False):
+        '''  Evaluate the model's current state on dev or test set  '''
         bucket_loss_texts = []
         bucket_losses = []
         summaries = []
@@ -269,6 +296,7 @@ class Summarizer(object):
         avg_loss = np.sum(train_losses) / len(train_losses)
         print 'Average train loss', avg_loss
         eval_start = time.time()
+
         for bucket_index in xrange(len(config.BUCKETS)):
             bucket_count = len(self.test_data[bucket_index])
             if bucket_count == 0:
@@ -276,6 +304,7 @@ class Summarizer(object):
                 continue
             bucket_loss = 0
             while True:
+                # get data
                 eval_data = self.test_data if test else self.dev_data
                 batch_data = data.get_batch(eval_data, bucket_index,
                                             config.BUCKETS, config.BATCH_SIZE,
@@ -284,6 +313,7 @@ class Summarizer(object):
                 decoder_inputs = batch_data[1]
                 decoder_masks = batch_data[2]
                 done = batch_data[3]
+                # run model
                 _, step_loss, output_logits = self.run_step(sess,
                                                             encoder_inputs,
                                                             decoder_inputs,
@@ -292,8 +322,8 @@ class Summarizer(object):
                                                             bucket_index,
                                                             False)
                 bucket_loss += step_loss
-
                 output_logits = np.array(output_logits)
+                # get summaries
                 for i in xrange(config.BATCH_SIZE):
                     summaries.append(self._construct_seq(
                                      output_logits[:, i, :]))
@@ -301,19 +331,24 @@ class Summarizer(object):
                 if done:
                     eval_iter = 0
                     break
+
             loss_text = 'Test bucket:', bucket_index, 'Avg Loss:', \
                 (bucket_loss / bucket_count)
             print loss_text
             bucket_losses.append(bucket_loss)
             bucket_loss_texts.append(loss_text)
+
         path = os.path.join(self.results_path,
                             'iter_' + str(iteration))
+        # adjust learning rate if dev loss increases
         if self.dev_loss is not None:
             if sum([self.dev_loss[i] < bucket_losses[i]
                     for i in range(len(bucket_losses))]) > 0:
                 self.lr /= 2
                 print 'Learning rate adjusted'
         self.dev_loss = bucket_losses
+
+        # log results
         if test:
             path += '_test'
         data.make_dir(path)
@@ -324,7 +359,7 @@ class Summarizer(object):
         print 'Evaluation took', time.time() - eval_start
 
     def train(self):
-
+        '''  train the model  '''
         def num_steps(bucket):
             return int(np.ceil(len(bucket) / float(config.BATCH_SIZE)))
 
@@ -332,6 +367,7 @@ class Summarizer(object):
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             self._check_restore_parameters(sess, saver)
+
             iteration = self.global_step.eval()
             bucket_sizes = [num_steps(v['dec_input']) for k, v
                             in self.train_data.iteritems()]
@@ -340,6 +376,7 @@ class Summarizer(object):
             step_iter = self.bucket_step.eval()
             print 'Starting at iter:', iteration, 'epoch:', cur_epoch+1, \
                   'bucket index:', bucket_index, 'bucket step:', step_iter
+
             for epoch in range(cur_epoch, config.NUM_EPOCHS):
                 epoch_start = time.time()
                 total_losses = []
@@ -347,10 +384,13 @@ class Summarizer(object):
                 print '\n', 'Epoch:', epoch+1
                 print 'Bucket sizes', bucket_sizes
                 print 'Learning rate:', self.lr
+                # show progress bar if more than one batch
                 if sum(bucket_sizes) > 1:
                     prog = utils.Progbar(target=bucket_sizes[bucket_index])
                 end_while = False
+
                 while True:
+                    # get data for iteration
                     batch_start = time.time()
                     batch_data = data.get_batch(self.train_data, bucket_index,
                                                 config.BUCKETS,
@@ -360,15 +400,25 @@ class Summarizer(object):
                     decoder_inputs = batch_data[1]
                     decoder_masks = batch_data[2]
                     next_bucket = batch_data[3]
+                    # run the model
                     _, step_loss, _ = self.run_step(sess, encoder_inputs,
                                                     decoder_inputs,
                                                     decoder_masks,
                                                     config.BATCH_SIZE,
                                                     bucket_index, True)
+                    # reset iteration vars if done with the current bucket
                     if next_bucket:
                         step_iter = sess.run(tf.assign(self.bucket_step, 0))
                         bucket_index = sess.run(tf.assign(self.bucket_index,
                                                           bucket_index+1))
+                        if sum(bucket_sizes) > 1:
+                            print  # update progress
+                            prog.update(bucket_sizes[bucket_index-1],
+                                        [("train loss", step_loss),
+                                         ('batch runtime',
+                                          time.time() - batch_start)])
+                            new_bucket = bucket_sizes[bucket_index]
+                            prog = utils.Progbar(target=new_bucket)
                     else:
                         step_iter = sess.run(tf.assign(self.bucket_step,
                                                        step_iter+1))
@@ -376,14 +426,9 @@ class Summarizer(object):
                         end_while = True
                         bucket_index = sess.run(tf.assign(self.bucket_index,
                                                           0))
-                    if next_bucket and sum(bucket_sizes) > 1:
-                        print
-                        prog.update(bucket_sizes[bucket_index-1],
-                                    [("train loss", step_loss),
-                                     ('batch runtime',
-                                      time.time() - batch_start)])
-                        prog = utils.Progbar(target=bucket_sizes[bucket_index])
                     total_losses.append(step_loss)
+
+                    # when to evaluate and save state
                     if end_while or \
                        iteration == 200 or \
                        (iteration > 0 and iteration % 1000 == 0):
@@ -404,29 +449,33 @@ class Summarizer(object):
                                     [("train loss", step_loss),
                                      ('batch runtime',
                                       time.time() - batch_start)])
-
+            # eval on test set at the end
             self.evaluate(sess, total_losses, iteration, test=True)
             saver.save(sess, os.path.join(self.checkpoint_path,
                                           'summarizer'),
                        global_step=iteration)
 
     def summarize(self, inputs):
+        ''' generate a headline for the given inputs  '''
         saver = tf.train.Saver()
 
         with tf.Session() as sess:
             summaries = []
             sess.run(tf.global_variables_initializer())
             self._check_restore_parameters(sess, saver)
+            # get data
             bucket_index, input_data = data.process_input(inputs,
                                                           config.BUCKETS)
             encoder_inputs = input_data[0]
             decoder_inputs = input_data[1]
             decoder_masks = input_data[2]
+            # run model
             _, _, output_logits = self.run_step(sess, encoder_inputs,
                                                 decoder_inputs,
                                                 decoder_masks,
                                                 len(input_data[0]),
                                                 bucket_index, False)
+            # get summaries
             output_logits = np.array(output_logits)
             for i in xrange(output_logits.shape[1]):
                 summaries.append(self._construct_seq(

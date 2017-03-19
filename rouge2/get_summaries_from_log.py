@@ -7,7 +7,7 @@ summary_path = '/datadrive/gigaword_parsed/summaries/generated'
 def sum_file_name(count, iter_name, sum_name):
     sys_name = sum_name + '_' + iter_name[5:]
     filename = str(count) + '_' + sys_name.replace('_', '-')
-    return filename
+    return os.path.join(filename)
 
 
 def write_summaries(results_path, iter_name, sum_name):

@@ -165,6 +165,6 @@ def process_input(inputs, buckets, enc_dict, dec_dict):
         texts.append(txt_vec)
         headlines.append(hl_vec)
         masks.append(mask)
-    return bucket_index, (_reshape(texts*20, bucket[0], len(inputs)),
-                          _reshape(headlines*20, bucket[1], len(inputs)),
-                          _reshape(masks*20, bucket[1], len(inputs)))
+    return bucket_index, (_reshape(texts*20, bucket[0], len(inputs)*20),
+                          _reshape(headlines*20, bucket[1], len(inputs)*20),
+                          _reshape(masks*20, bucket[1], len(inputs)*20))

@@ -42,7 +42,7 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                                         j,
                                         enc_out,
                                         layer_inputs[j],
-                                        decoder.embedding_size,
+                                        input_size,
                                         seq_len=decoder.conv_size)
                     layer_inputs[j+1] = step_input
                     layer_outputs[j] = c_t

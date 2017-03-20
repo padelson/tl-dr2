@@ -55,6 +55,7 @@ class Summarizer(object):
         '''Construct final sequence by taking argmax over the logits'''
         output_logits = np.array(output_logits)
         outputs = [int(np.argmax(logit)) for logit in output_logits]
+        # outputs = np.argmax(output_logits, axis=1).tolist()
         # If there is an EOS symbol in outputs, cut them at that point.
         if config.EOS_ID in outputs:
             outputs = outputs[:outputs.index(config.EOS_ID)+1]
@@ -177,10 +178,8 @@ class Summarizer(object):
                                     )
 
         # If we use output projection, we need to project outputs for decoding.
-        cur = None
-        bucket = 0
 
-        def project_outputs():
+        def project_outputs(cur, bucket):
             if self.output_projection:
                     return [tf.matmul(output,
                             self.output_projection[0]) +
@@ -192,7 +191,7 @@ class Summarizer(object):
             cur = self.outputs[bucket]
             self.outputs[bucket] = tf.cond(self.feed_prev_placeholder,
                                            lambda: cur,
-                                           project_outputs)
+                                           lambda: project_outputs(cur, bucket))
 
         print 'Took', time.time() - start, 'seconds'
 
@@ -478,6 +477,7 @@ class Summarizer(object):
                                                 bucket_index, False)
             # get summaries
             output_logits = np.array(output_logits)
+            print output_logits.shape
             for i in xrange(output_logits.shape[1]):
                 summaries.append(self._construct_seq(
                                  output_logits[:, i, :]))

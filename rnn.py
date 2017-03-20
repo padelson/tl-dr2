@@ -1,5 +1,3 @@
-import copy
-
 from tensorflow.python.util import nest
 import tensorflow as tf
 
@@ -16,10 +14,9 @@ def seq2seq(encoder_inputs,
 
     with tf.variable_scope('seq2seq_rnn'):
         # encode
-        encoder_cell = copy.deepcopy(cell)
         embedded_enc_input = [tf.nn.embedding_lookup(embeddings, i)
                               for i in encoder_inputs]
-        encoder_outputs, encoder_state = tf.nn.rnn(encoder_cell,
+        encoder_outputs, encoder_state = tf.nn.rnn(cell,
                                                    embedded_enc_input,
                                                    dtype=tf.float32)
 

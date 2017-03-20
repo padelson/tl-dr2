@@ -132,13 +132,13 @@ class Summarizer(object):
         '''  Create loss, output projection, RNN cell, embeddings  '''
         print 'Creating loss...  ',
         start = time.time()
-
+        xavier = tf.contrib.layers.xavier_initializer()
         # use output projection if we're using sampled softmax
         if config.NUM_SAMPLES > 0 and config.NUM_SAMPLES < self.dec_vocab:
             proj_w_size = config.HIDDEN_SIZE
             w = tf.get_variable('proj_w', [proj_w_size,
-                                           self.dec_vocab])
-            b = tf.get_variable('proj_b', [self.dec_vocab])
+                                           self.dec_vocab], initializer=xavier)
+            b = tf.get_variable('proj_b', [self.dec_vocab], initializer=xavier)
             self.output_projection = (w, b)
 
         def sampled_loss(inputs, labels):
@@ -152,18 +152,17 @@ class Summarizer(object):
         self.cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] *
                                                 config.NUM_LAYERS)
 
-        embed_init = tf.contrib.layers.xavier_initializer()
         if self.pretrained:
             # set up variables for special tokens and concat with pretrained
             pad = tf.zeros([1, config.EMBED_SIZE])
-            flags = tf.Variable(embed_init([3, config.EMBED_SIZE],
+            flags = tf.Variable(xavier([3, config.EMBED_SIZE],
                                 dtype=tf.float32))
             embeddings = tf.constant(data.load_embeddings(self.data_path),
                                      dtype=tf.float32)
             self.embeddings = tf.concat(0, [pad, flags, embeddings])
         else:
-            self.embeddings = tf.Variable(embed_init([self.enc_vocab,
-                                                      config.EMBED_SIZE]),
+            self.embeddings = tf.Variable(xavier([self.enc_vocab,
+                                                  config.EMBED_SIZE]),
                                           dtype=tf.float32)
 
         feed_prev = self.feed_prev_placeholder

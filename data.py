@@ -52,7 +52,7 @@ def _ids_and_mask_data(hl, txt, mask_size, enc_dict, dec_dict):
                         for w in txt.split(' ')], txt_size)
     txt_vec = list(reversed(txt_vec))
     mask = np.ones(hl_size)
-    for i in range(len(hl_vec), hl_size):
+    for i in range(len(hl.split()), hl_size):
         mask[i] = 0
     return np.array(hl_vec), np.array(txt_vec), np.array(mask)
 

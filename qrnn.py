@@ -342,9 +342,9 @@ def init_encoder_and_decoder(num_encoder_symbols, num_decoder_symbols,
                              embedding_size, num_layers, conv_size, num_convs,
                              output_projection):
     encoder = QRNN(num_encoder_symbols, enc_seq_length,
-                   embedding_size, num_layers/2, conv_size, num_convs, 'enc')
+                   embedding_size, num_layers, conv_size, num_convs, 'enc')
     decoder = QRNN(num_decoder_symbols, dec_seq_length,
-                   embedding_size, num_layers/2, conv_size, num_convs,
+                   embedding_size, num_layers, conv_size, num_convs,
                    output_projection, 'dec')
     return encoder, decoder
 

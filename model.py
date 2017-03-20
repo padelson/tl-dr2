@@ -137,9 +137,8 @@ class Summarizer(object):
         # use output projection if we're using sampled softmax
         if config.NUM_SAMPLES > 0 and config.NUM_SAMPLES < self.dec_vocab:
             proj_w_size = config.HIDDEN_SIZE
-            w = tf.get_variable('proj_w', [proj_w_size,
-                                           self.dec_vocab], initializer=xavier)
-            b = tf.get_variable('proj_b', [self.dec_vocab], initializer=xavier)
+            w = tf.Variable(xavier([proj_w_size, self.dec_vocab]), name='w')
+            b = tf.Variable(xavier([self.dec_vocab]), name='b')
             self.output_projection = (w, b)
 
         def sampled_loss(inputs, labels):
@@ -157,7 +156,7 @@ class Summarizer(object):
             # set up variables for special tokens and concat with pretrained
             pad = tf.zeros([1, config.EMBED_SIZE])
             flags = tf.Variable(xavier([3, config.EMBED_SIZE],
-                                dtype=tf.float32))
+                                dtype=tf.float32), name='flags')
             embeddings = tf.constant(data.load_embeddings(self.data_path),
                                      dtype=tf.float32)
             self.embeddings = tf.concat(0, [pad, flags, embeddings])
@@ -190,8 +189,9 @@ class Summarizer(object):
         for bucket in xrange(len(config.BUCKETS)):
             cur = self.outputs[bucket]
             self.outputs[bucket] = tf.cond(self.feed_prev_placeholder,
-                                           lambda: cur,
-                                           lambda: project_outputs(cur, bucket))
+                                           lambda: project_outputs(cur,
+                                                                   bucket),
+                                           lambda: cur)
 
         print 'Took', time.time() - start, 'seconds'
 

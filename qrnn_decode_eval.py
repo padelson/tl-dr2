@@ -36,6 +36,8 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
             enc_out = tf.squeeze(encode_outputs[j][:, -1, :])
             if i == 0:
                 if j < decoder.num_layers-1:
+                    input_size = decoder.embedding_size if j == 0 \
+                        else decoder.num_convs
                     step_input, c_t = decoder.conv_with_encode_output(
                                         j,
                                         enc_out,

@@ -372,8 +372,8 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
         input_shape = encoder.embedding_size if i == 0 else encoder.num_convs
         encode_outputs.append(encoder.conv_layer(i, inputs, input_shape,
                                                  center_conv)[0])
-    encode_outputs = [tf.reverse(e, [False, True, False])
-                      for e in encode_outputs]
+    encode_outputs = tf.concat(1,[tf.reverse(e, [False, True, False])
+                      for e in encode_outputs])
     encoder_state = encode_outputs[-1][:, -1, :]
 
     def decode(feed_prev_bool):

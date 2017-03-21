@@ -49,7 +49,7 @@ class Summarizer(object):
                                                     config.HIDDEN_SIZE,
                                                     self.output_projection)
         return seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
-                         do_decode, self.embeddings, self.center_conv)
+                         do_decode, self.embeddings, self.cell=, self.center_conv)
 
     def _construct_seq(self, output_logits):
         '''Construct final sequence by taking argmax over the logits'''

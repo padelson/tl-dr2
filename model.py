@@ -209,7 +209,7 @@ class Summarizer(object):
             self.bucket_index = tf.Variable(0, dtype=tf.int32, trainable=False,
                                             name='bucket_index')
             if self.create_opt:
-                self.optimizer = tf.train.GradientDescentOptimizer(config.LR)
+                self.optimizer = tf.train.AdamOptimizer(config.LR)
                 trainables = tf.trainable_variables()
                 self.gradient_norms = []
                 self.train_ops = []
@@ -365,8 +365,9 @@ class Summarizer(object):
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             self._check_restore_parameters(sess, saver)
-
+            # get checkpoint save state
             iteration = self.global_step.eval()
+            # get number of batches per bucket
             bucket_sizes = [num_steps(v['dec_input']) for k, v
                             in self.train_data.iteritems()]
             cur_epoch = self.epoch.eval()

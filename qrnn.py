@@ -1,3 +1,10 @@
+'''QRNN class and functions for 2l-dr: headline generation (take 2)
+implements all the layer functions and operations
+for a QRNN https://arxiv.org/pdf/1611.01576.pdf
+
+Also implements the seq2seq function for tf.nn.model_with_buckets()
+'''
+
 import numpy as np
 import tensorflow as tf
 

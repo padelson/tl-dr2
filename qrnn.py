@@ -374,7 +374,6 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
                                                  center_conv)[0])
     encode_outputs = [tf.reverse(e, [False, True, False])
                       for e in encode_outputs]
-    decoder_inputs = tf.transpose(tf.pack(decoder_inputs))
     encoder_state = encode_outputs[-1][:, -1, :]
 
     def decode(feed_prev_bool):

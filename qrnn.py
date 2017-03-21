@@ -7,8 +7,7 @@ Also implements the seq2seq function for tf.nn.model_with_buckets()
 
 import numpy as np
 import tensorflow as tf
-
-from qrnn_decode_eval import decode_evaluate
+from tensorflow.python.util import nest
 
 
 class QRNN(object):
@@ -357,7 +356,7 @@ def init_encoder_and_decoder(num_encoder_symbols, num_decoder_symbols,
 
 
 def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
-              feed_prev, embeddings, center_conv=False):
+              feed_prev, embeddings, cell, center_conv=False):
     # inputs are lists of placeholders, each one is shape [None]
     # self.enc_input_size = len(encoder_inputs)
     # self.dec_input_size = len(decoder_inputs)
@@ -376,33 +375,37 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
     encode_outputs = [tf.reverse(e, [False, True, False])
                       for e in encode_outputs]
     decoder_inputs = tf.transpose(tf.pack(decoder_inputs))
-    embedded_dec_inputs = decoder.get_embeddings(embeddings, decoder_inputs)
+    encoder_state = encode_outputs[-1][:, -1, :]
 
-    def dec_train():
-        decode_outputs = []
-        for i in range(decoder.num_layers):
-            # list index i of dim [batch, seq_len, state_size]
-            enc_out = tf.squeeze(encode_outputs[i][:, -1, :])
-            inputs = embedded_dec_inputs if i == 0 else decode_outputs[-1]
-            input_shape = decoder.embedding_size if i == 0 else \
-                decoder.num_convs
+    def decode(feed_prev_bool):
+        reuse = None if feed_prev_bool else True
+        with tf.variable_scope(tf.get_variable_scope(), reuse=reuse):
+            loop_function = tf.nn.seq2seq._extract_argmax_and_embed(
+                                embeddings,
+                                decoder.output_projection,
+                                True) if feed_prev_bool else None
+            embedded_dec_inputs = [tf.nn.embedding_lookup(embeddings, i)
+                                   for i in decoder_inputs]
+            outputs, state = tf.nn.seq2seq.attention_decoder(
+                embedded_dec_inputs,
+                encoder_state,
+                encode_outputs,
+                cell,
+                loop_function=loop_function)
+            state_list = [state]
+            if nest.is_sequence(state):
+                state_list = nest.flatten(state)
+            # tf.cond has to return a single value
+            return outputs + state_list
 
-            is_last_layer = i == (decoder.num_layers - 1)
-            if not is_last_layer:
-                decode_outputs.append(decoder.conv_with_encode_output(
-                                      i,
-                                      enc_out,
-                                      inputs,
-                                      input_shape)[0])
-            else:
-                last_state = decoder.conv_with_attention(i, encode_outputs,
-                                                         inputs,
-                                                         input_shape)[0]
-        return last_state
-
-    def dec_eval():
-        return decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
-                               embeddings)
-    result = tf.cond(feed_prev, dec_eval, dec_train)
-    return [tf.squeeze(x) for x in
-            tf.split(1, decoder.seq_length, result)], None
+    # we want to feed previous input in during testing
+    outputs_and_state = tf.cond(feed_prev,
+                                lambda: decode(True),
+                                lambda: decode(False))
+    outputs_len = len(decoder_inputs)
+    state_list = outputs_and_state[outputs_len:]
+    state = state_list[0]
+    if nest.is_sequence(encoder_state):
+        state = nest.pack_sequence_as(structure=encoder_state,
+                                      flat_sequence=state_list)
+    return outputs_and_state[:outputs_len], state

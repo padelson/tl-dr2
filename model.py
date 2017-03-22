@@ -90,7 +90,7 @@ class Summarizer(object):
     def _setup_sess_dir(self):
         '''Set up session directory.  All outputs from the program go here'''
         print 'Setting up directory for session'
-        self.sess_dir = os.path.join('/datadrive', self.sess_name)
+        self.sess_dir = os.path.join('', self.sess_name)
         data.make_dir(self.sess_dir)
 
     def _setup_checkpoints(self):

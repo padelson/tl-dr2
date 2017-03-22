@@ -4,7 +4,8 @@ tl-dr (abstractive text summarization) take 2
 ## How to run
 We have shellscripts in ./scripts that giveyou examples of how to run the model
 Obviously, you can't run the full thing if you don't have the Gigaword dataset.
-But we did put some toy datasets in here.  
+But we did put some toy datasets in here.  Not that I guarantee you'll learn
+anything on them... 
 
 We did also build in an option to just run and generate summaries, but
 the project rubric says to not put model checkpoints.  So this feature is moot.

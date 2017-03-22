@@ -72,7 +72,7 @@ def _bucketize_data(headlines, text, buckets, enc_dict, dec_dict, vec=True):
         size = (len(txt.split()), len(hl.split()))
         bucket_index = _get_bucket(size, buckets)
         if vec:
-            hl_vec, txt_vec, mask = _one_hot_and_mask_data(
+            hl_vec, txt_vec, mask = _ids_and_mask_data(
                                                     hl,
                                                     txt,
                                                     buckets[bucket_index],

@@ -1,3 +1,5 @@
+'''  QRNN decode function for 2l-dr: headline generation (take 2)
+defines qrnn decoding, a deep learning sequence-to-sequence model'''
 import tensorflow as tf
 
 

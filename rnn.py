@@ -1,3 +1,6 @@
+'''RNN-based encoder-decoder model for 2l-dr: headline generation (take 2)
+leverages tf.nn.seq2seq (r0.12)
+'''
 from tensorflow.python.util import nest
 import tensorflow as tf
 
@@ -11,7 +14,8 @@ def seq2seq(encoder_inputs,
             embeddings,
             output_projection=None,
             feed_previous=None):
-
+    '''  This function gets passed into tf.nn.seq2seq.model_with_buckets
+         to run one encode-decode step  '''
     with tf.variable_scope('seq2seq_rnn'):
         # encode
         embedded_enc_input = [tf.nn.embedding_lookup(embeddings, i)
@@ -43,8 +47,10 @@ def seq2seq(encoder_inputs,
                 state_list = [state]
                 if nest.is_sequence(state):
                     state_list = nest.flatten(state)
+                # tf.cond has to return a single value
                 return outputs + state_list
 
+        # we want to feed previous input in during testing
         outputs_and_state = tf.cond(feed_previous,
                                     lambda: decode(True),
                                     lambda: decode(False))

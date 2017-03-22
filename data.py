@@ -63,7 +63,7 @@ def init_data_buckets(n):
             for i in range(n)}
 
 
-def _bucketize_data(headlines, text, buckets, enc_dict, dec_dict):
+def _bucketize_data(headlines, text, buckets, enc_dict, dec_dict, vec=True):
     '''  sort data into appropriate bucket sizes  '''
     data_by_bucket = init_data_buckets(len(buckets))
     for i in range(len(headlines)):
@@ -71,17 +71,24 @@ def _bucketize_data(headlines, text, buckets, enc_dict, dec_dict):
         txt = text[i]
         size = (len(txt.split()), len(hl.split()))
         bucket_index = _get_bucket(size, buckets)
-        hl_vec, txt_vec, mask = _ids_and_mask_data(hl, txt,
-                                                   buckets[bucket_index],
-                                                   enc_dict, dec_dict)
-        data_by_bucket[bucket_index]['enc_input'].append(txt_vec)
-        data_by_bucket[bucket_index]['dec_input'].append(hl_vec)
-        data_by_bucket[bucket_index]['dec_masks'].append(mask)
+        if vec:
+            hl_vec, txt_vec, mask = _one_hot_and_mask_data(
+                                                    hl,
+                                                    txt,
+                                                    buckets[bucket_index],
+                                                    enc_dict, dec_dict)
+            data_by_bucket[bucket_index]['enc_input'].append(txt_vec)
+            data_by_bucket[bucket_index]['dec_input'].append(hl_vec)
+            data_by_bucket[bucket_index]['dec_masks'].append(mask)
+        else:
+            data_by_bucket[bucket_index]['enc_input'].append(txt)
+            data_by_bucket[bucket_index]['dec_input'].append(hl)
+            data_by_bucket[bucket_index]['dec_masks'].append(None)
 
     return data_by_bucket
 
 
-def load_one_set(data_path, name, buckets, enc_dict, dec_dict):
+def load_one_set(data_path, name, buckets, enc_dict, dec_dict, vec=True):
     '''  load one subset of the data (train/dev/test)  '''
     headlines = []
     text = []
@@ -93,7 +100,7 @@ def load_one_set(data_path, name, buckets, enc_dict, dec_dict):
     for filename in os.listdir(text_path):
         text += _read_and_split_file(os.path.join(text_path, filename))
 
-    return _bucketize_data(headlines, text, buckets, enc_dict, dec_dict)
+    return _bucketize_data(headlines, text, buckets, enc_dict, dec_dict, vec)
 
 
 def load_data(data_path, buckets):

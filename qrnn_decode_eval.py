@@ -1,3 +1,5 @@
+'''  QRNN decode function for 2l-dr: headline generation (take 2)
+defines qrnn decoding, a deep learning sequence-to-sequence model'''
 import tensorflow as tf
 
 
@@ -36,26 +38,32 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
             enc_out = tf.squeeze(encode_outputs[j][:, -1, :])
             if i == 0:
                 if j < decoder.num_layers-1:
+                    input_size = decoder.embedding_size if j == 0 \
+                        else decoder.num_convs
                     step_input, c_t = decoder.conv_with_encode_output(
                                         j,
                                         enc_out,
                                         layer_inputs[j],
-                                        decoder.embedding_size,
+                                        input_size,
                                         seq_len=decoder.conv_size)
                     layer_inputs[j+1] = step_input
                     layer_outputs[j] = c_t
                 else:
+                    input_size = decoder.embedding_size \
+                                if decoder.num_layers == 1 \
+                                else decoder.num_convs
                     h_t, c_t = decoder.conv_with_attention(
                                 j, encode_outputs,
                                 layer_inputs[j],
-                                decoder.num_convs,
+                                input_size,
                                 seq_len=decoder.conv_size)
                     H.append(tf.squeeze(h_t[:, -1:, :]))
                     layer_outputs[j] = c_t
             else:
+                input_shape = decoder.embedding_size if j == 0 else \
+                    decoder.num_convs
                 if j < decoder.num_layers-1:
-                    input_shape = decoder.embedding_size if j == 0 else \
-                        decoder.num_convs
+
                     h_t, c_t = decoder.eval_conv_with_encode_output(
                                 j,
                                 enc_out,
@@ -70,7 +78,7 @@ def decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
                                 j,
                                 encode_outputs,
                                 layer_inputs[j],
-                                decoder.num_convs,
+                                input_shape,
                                 layer_outputs[j])
                     H.append(tf.squeeze(h_t))
                     layer_outputs[j] = c_t

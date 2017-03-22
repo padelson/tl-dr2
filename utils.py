@@ -1,48 +1,33 @@
+'''Utility functions for 2l-dr: headline generation (take 2)
+Executes the Summarizer class, a deep learning sequence-to-sequence model
+'''
+
 import os
 import sys
 import time
 import numpy as np
 
-from pyrouge import Rouge155
-
 import data
 
 
-def _eval_metrics(gen_sums_path, gt_sums_path):
-    r = Rouge155()
-    r.system_dir = gen_sums_path
-    r.model_dir = gt_sums_path
-    r.system_filename_pattern = '(\d+).txt'
-    r.model_filename_pattern = '#ID#.txt'
-
-    output = r.convert_and_evaluate()
-    print(output)
-    output_dict = r.output_to_dict(output)
-    return output_dict
-
-
 def write_results(summaries, train_loss, losses, filepath, gt_summaries_path):
+    '''  write evaluation results to file  '''
     dir_path = os.path.join(filepath, 'generated_summaries')
     data.make_dir(dir_path)
-    # for i, sums in enumerate(summaries):
-    #     with open(os.path.join(dir_path, str(i)+'.txt'), 'w') as f:
-    #         f.write(sums+'\n')
-    # metrics_results = _eval_metrics(dir_path, gt_summaries_path)
     with open(os.path.join(filepath, 'log'), 'w') as f:
         f.write('Avg Train loss: ' + str(train_loss))
         for loss in losses:
             f.write(str(loss) + '\n')
         f.write('\n' * 3)
-        # for metric_name, result in metrics_results:
-        #     f.write(metric_name + ':  ' + str(result) + '\n')
         f.write('\n' * 3)
-        for generated in summaries:
-            f.write('Generated headline: ' + generated + '\n\n')
+        for i, generated in enumerate(summaries):
+            f.write(str(i) + ' Generated headline: ' + generated + '\n\n')
 
 
 class Progbar(object):
     """
-    Progbar class copied from keras (https://github.com/fchollet/keras/)
+    Progbar class copied from CS224n starter code, which was copied from
+    keras (https://github.com/fchollet/keras/)
     Displays a progress bar.
     # Arguments
         target: Total number of steps expected.

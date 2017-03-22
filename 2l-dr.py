@@ -1,14 +1,23 @@
-# import shit
-# get flags and args
-# initialize data
-# initialize model
-# train/summarize
+'''Main function for 2l-dr: headline generation (take 2)
+Executes the Summarizer class, a deep learning sequence-to-sequence model
+
+Usage:
+    --train: train the model on data at data_path
+    --sum: generate a summary for the input found at input_path
+    --model: (rnn or qrnn) deep learning model to use
+    --data_path: path to data
+    --input_path: path to summary input
+    --sess_name: name of executing session
+    --center_conv: use a centered convolution in qrnn instead of masked
+    --pretrained: use pretrained GloVe vectors
+'''
 import argparse
 
 from model import Summarizer
 
 
 def setup_argparse():
+    '''Set up argument parser'''
     parser = argparse.ArgumentParser()
     parser.add_argument('--train', action='store_true')
     parser.add_argument('--sum', action='store_true')

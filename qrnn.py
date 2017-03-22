@@ -1,11 +1,21 @@
-import numpy as np
-import tensorflow as tf
+'''QRNN class and functions for 2l-dr: headline generation (take 2)
+implements all the layer functions and operations
+for a Quasi-RNN https://arxiv.org/pdf/1611.01576.pdf
 
-from qrnn_decode_eval import decode_evaluate
+Also implements the seq2seq function for tf.nn.model_with_buckets()
+
+There are some eval_* variants of some functions, which were written to run
+the decode step during training.
+'''
+
+import tensorflow as tf
+from tensorflow.python.util import nest
 
 
 class QRNN(object):
     def _init_vars(self):
+        '''  initialize tf vars.  i feel like this is an incorrect use of
+             scoping but i couldn't really figure out how else to do it  '''
         for i in xrange(self.num_layers):
             input_shape = self.embedding_size if i == 0 else \
                 self.num_convs
@@ -41,6 +51,7 @@ class QRNN(object):
     def __init__(self, num_symbols, seq_length,
                  embedding_size, num_layers, conv_size, num_convs,
                  output_projection=None, name=''):
+        '''  init qrnn class  '''
         self.num_symbols = num_symbols
         self.seq_length = seq_length
         self.embedding_size = embedding_size
@@ -53,11 +64,14 @@ class QRNN(object):
         self._init_vars()
 
     def get_embeddings(self, embeddings, word_ids):
+        '''  get word embeddings  '''
         if word_ids is None:
             return None
         return tf.nn.embedding_lookup(embeddings, word_ids)
 
     def fo_pool(self, Z, F, O, seq_len=None, c_prev=None):
+        ''' fo-pooling function defined in Bradbury et al. on QRNNs
+            very reminiscent of LSTM gates'''
         if seq_len is None:
             seq_len = self.seq_length
         # Z, F, O dims: [batch_size, sequence_length, num_convs]
@@ -66,6 +80,7 @@ class QRNN(object):
             C = [c_prev]
         else:
             C = [tf.fill(tf.pack([tf.shape(Z)[0], tf.shape(Z)[2]]), 0.0)]
+        # recurrent definition, must be computed one timestep at a time
         for i in range(1, seq_len):
             c_i = tf.mul(F[:, i, :], C[-1]) + \
                   tf.mul(1-F[:, i, :], Z[:, i, :])
@@ -78,6 +93,7 @@ class QRNN(object):
         return tf.reshape(tf.pack(H), tf.shape(Z)), C[-1]
 
     def eval_fo_pool(self, Z, F, O, seq_len, c_prev=None):
+        '''  fo-pool variant for use during evaluation  '''
         # Z, F, O dims: [batch_size, sequence_length, num_convs]
         H = []
         C = [c_prev]
@@ -92,15 +108,16 @@ class QRNN(object):
         # i think we want output [batch, seq_len, num_convs]
         return tf.reshape(tf.pack(H), tf.shape(Z)), C[-1]
 
-    def f_pool(self, Z, F, sequence_length):
-        # Z, F dims: [batch_size, sequence_length, num_convs]
-        H = tf.fill(tf.shape(Z), 0)
-        for i in range(1, self.seq_length):
-            H[:, i, :] = tf.mul(F[:, i, :], H[:, i-1, :]) + \
-                         tf.mul(1-F[:, i, :])
-        return np.array(H)
+    # def f_pool(self, Z, F, sequence_length):
+    #     # Z, F dims: [batch_size, sequence_length, num_convs]
+    #     H = tf.fill(tf.shape(Z), 0)
+    #     for i in range(1, self.seq_length):
+    #         H[:, i, :] = tf.mul(F[:, i, :], H[:, i-1, :]) + \
+    #                      tf.mul(1-F[:, i, :])
+    #     return np.array(H)
 
     def _get_filter_shape(self, input_shape):
+        '''  set up dimensions for convolution filter  '''
         return [self.conv_size, input_shape, 1, self.num_convs*3]
 
     # convolution dimension results maths
@@ -114,6 +131,8 @@ class QRNN(object):
     # filter_width = embedding_size
 
     def conv_layer(self, layer_id, inputs, input_shape, center_conv=False):
+        '''  execute a convolution over inputs.  default is to used a masked
+             convolution.  '''
         with tf.variable_scope("QRNN/"+self.name +
                                "/Variable/Convolution/"+str(layer_id),
                                reuse=True):
@@ -154,6 +173,9 @@ class QRNN(object):
     def conv_with_encode_output(self, layer_id, h_t, inputs,
                                 input_shape, pool=True,
                                 seq_len=None):
+        '''  execute a convolution, also feeding in a previous
+             output before the pooling step.
+             option to disable pooling: used in conv_with_attention'''
         if seq_len is None:
             seq_len = self.seq_length
         pooling = self.fo_pool if pool else lambda x, y, z, seq_len: (x, y, z)
@@ -198,6 +220,7 @@ class QRNN(object):
 
     def conv_with_attention(self, layer_id, encode_outputs, inputs,
                             input_shape, seq_len=None):
+        '''  perform a convolution step with soft attention  '''
         if seq_len is None:
             seq_len = self.seq_length
         h_t = tf.squeeze(encode_outputs[-1][:, -1, :])
@@ -240,19 +263,21 @@ class QRNN(object):
                 H.append(tf.squeeze(h_i))
             return tf.reshape(tf.pack(H), tf.shape(Z)), C[-1]
 
-    def transform_output(self, inputs):
-        # input dim list of [batch, num_convs]
-        shape = (self.num_convs, self.num_symbols)
-        with tf.variable_scope('QRNN/'+self.name+'/Transform_output'):
-            W = tf.get_variable('W', shape,
-                                initializer=self.initializer, dtype=tf.float32)
-            b = tf.get_variable('b', [self.num_symbols],
-                                initializer=self.initializer, dtype=tf.float32)
-            # TODO: do efficiently
-            result = []
-            for i in inputs:
-                result.append(tf.nn.xw_plus_b(i, W, b))
-        return result
+    # def transform_output(self, inputs):
+    #     # input dim list of [batch, num_convs]
+    #     shape = (self.num_convs, self.num_symbols)
+    #     with tf.variable_scope('QRNN/'+self.name+'/Transform_output'):
+    #         W = tf.get_variable('W', shape,
+    #                             initializer=self.initializer,
+    #                             dtype=tf.float32)
+    #         b = tf.get_variable('b', [self.num_symbols],
+    #                             initializer=self.initializer, d
+    #                             type=tf.float32)
+    #         # TODO: do efficiently
+    #         result = []
+    #         for i in inputs:
+    #             result.append(tf.nn.xw_plus_b(i, W, b))
+    #     return result
 
     def eval_conv_with_encode_output(self, layer_id, h_t, inputs,
                                      input_shape, c_prev, pool=True):
@@ -342,15 +367,16 @@ def init_encoder_and_decoder(num_encoder_symbols, num_decoder_symbols,
                              embedding_size, num_layers, conv_size, num_convs,
                              output_projection):
     encoder = QRNN(num_encoder_symbols, enc_seq_length,
-                   embedding_size, num_layers/2, conv_size, num_convs, 'enc')
+                   embedding_size, num_layers, conv_size, num_convs, 'enc')
     decoder = QRNN(num_decoder_symbols, dec_seq_length,
-                   embedding_size, num_layers/2, conv_size, num_convs,
+                   embedding_size, num_layers, conv_size, num_convs,
                    output_projection, 'dec')
     return encoder, decoder
 
 
 def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
-              feed_prev, embeddings, center_conv=False):
+              feed_prev, embeddings, cell, center_conv=False):
+    '''  runs an encode-decode step for an QRNNenc + RNNdec model  '''
     # inputs are lists of placeholders, each one is shape [None]
     # self.enc_input_size = len(encoder_inputs)
     # self.dec_input_size = len(decoder_inputs)
@@ -361,41 +387,48 @@ def seq2seq_f(encoder, decoder, encoder_inputs, decoder_inputs,
     # embed to be shape [batch_size, sequence_length, embed_size]
     embedded_enc_inputs = encoder.get_embeddings(embeddings, encoder_inputs)
 
+    # encode with qrnn
     for i in range(encoder.num_layers):
         inputs = embedded_enc_inputs if i == 0 else encode_outputs[-1]
         input_shape = encoder.embedding_size if i == 0 else encoder.num_convs
         encode_outputs.append(encoder.conv_layer(i, inputs, input_shape,
                                                  center_conv)[0])
-    encode_outputs = [tf.reverse(e, [False, True, False])
-                      for e in encode_outputs]
-    decoder_inputs = tf.transpose(tf.pack(decoder_inputs))
-    embedded_dec_inputs = decoder.get_embeddings(embeddings, decoder_inputs)
+    encoder_state = tuple([encode_outputs[i][:, -1, :]
+                           for i in range(encoder.num_layers)])
 
-    def dec_train():
-        decode_outputs = []
-        for i in range(decoder.num_layers):
-            # list index i of dim [batch, seq_len, state_size]
-            enc_out = tf.squeeze(encode_outputs[i][:, -1, :])
-            inputs = embedded_dec_inputs if i == 0 else decode_outputs[-1]
-            input_shape = decoder.embedding_size if i == 0 else \
-                decoder.num_convs
+    encode_outputs = tf.concat(1, [tf.reverse(e, [False, True, False])
+                                   for e in encode_outputs])
 
-            is_last_layer = i == (decoder.num_layers - 1)
-            if not is_last_layer:
-                decode_outputs.append(decoder.conv_with_encode_output(
-                                      i,
-                                      enc_out,
-                                      inputs,
-                                      input_shape)[0])
-            else:
-                last_state = decoder.conv_with_attention(i, encode_outputs,
-                                                         inputs,
-                                                         input_shape)[0]
-        return last_state
+    # decode with rnn
+    def decode(feed_prev_bool):
+        reuse = None if feed_prev_bool else True
+        with tf.variable_scope(tf.get_variable_scope(), reuse=reuse):
+            loop_function = tf.nn.seq2seq._extract_argmax_and_embed(
+                                embeddings,
+                                decoder.output_projection,
+                                True) if feed_prev_bool else None
+            embedded_dec_inputs = [tf.nn.embedding_lookup(embeddings, i)
+                                   for i in decoder_inputs]
+            outputs, state = tf.nn.seq2seq.attention_decoder(
+                embedded_dec_inputs,
+                encoder_state,
+                encode_outputs,
+                cell,
+                loop_function=loop_function)
+            state_list = [state]
+            if nest.is_sequence(state):
+                state_list = nest.flatten(state)
+            # tf.cond has to return a single value
+            return outputs + state_list
 
-    def dec_eval():
-        return decode_evaluate(decoder, encode_outputs, embedded_dec_inputs,
-                               embeddings)
-    result = tf.cond(feed_prev, dec_eval, dec_train)
-    return [tf.squeeze(x) for x in
-            tf.split(1, decoder.seq_length, result)], None
+    # we want to feed previous input in during testing
+    outputs_and_state = tf.cond(feed_prev,
+                                lambda: decode(True),
+                                lambda: decode(False))
+    outputs_len = len(decoder_inputs)
+    state_list = outputs_and_state[outputs_len:]
+    state = state_list[0]
+    if nest.is_sequence(encoder_state):
+        state = nest.pack_sequence_as(structure=encoder_state,
+                                      flat_sequence=state_list)
+    return outputs_and_state[:outputs_len], state

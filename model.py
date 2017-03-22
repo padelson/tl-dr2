@@ -114,7 +114,7 @@ class Summarizer(object):
         self.decoder_masks = []
         self.feed_prev_placeholder = tf.placeholder(tf.bool, shape=[],
                                                     name='feed_prev')
-        self.learning_rate = tf.placeholder(tf.float32, shape=[], name='lr')
+        # self.learning_rate = tf.placeholder(tf.float32, shape=[], name='lr')
         for i in xrange(config.BUCKETS[-1][0]):  # Last bucket is the biggest.
             self.encoder_inputs.append(tf.placeholder(tf.int32, shape=[None],
                                        name='encoder{}'.format(i)))
@@ -233,7 +233,7 @@ class Summarizer(object):
         self.model = model
         self.pretrained = pretrained
         self.center_conv = center_conv
-        self.lr = config.LR
+        # self.lr = config.LR
         self.dev_loss = None
         print '###Initializing', model, 'model'
 
@@ -268,7 +268,7 @@ class Summarizer(object):
             input_feed[self.decoder_masks[step].name] = decoder_masks[step]
         last_target = self.decoder_inputs[decoder_size].name
         input_feed[last_target] = np.zeros([batch_size], dtype=np.int32)
-        input_feed[self.learning_rate] = self.lr
+        # input_feed[self.learning_rate] = self.lr
         input_feed[self.feed_prev_placeholder] = not update_params
         # output feed: depends on whether we do a backward step or not.
         if update_params:
@@ -339,11 +339,11 @@ class Summarizer(object):
         path = os.path.join(self.results_path,
                             'iter_' + str(iteration))
         # adjust learning rate if dev loss increases
-        if self.dev_loss is not None:
-            if sum([self.dev_loss[i] < bucket_losses[i]
-                    for i in range(len(bucket_losses))]) > 0:
-                self.lr /= 2
-                print 'Learning rate adjusted'
+        # if self.dev_loss is not None:
+        #     if sum([self.dev_loss[i] < bucket_losses[i]
+        #             for i in range(len(bucket_losses))]) > 0:
+        #         self.lr /= 2
+        #         print 'Learning rate adjusted'
         self.dev_loss = bucket_losses
 
         # log results
@@ -382,7 +382,7 @@ class Summarizer(object):
                 sess.run(tf.assign(self.epoch, epoch))
                 print '\n', 'Epoch:', epoch+1
                 print 'Bucket sizes', bucket_sizes
-                print 'Learning rate:', self.lr
+                # print 'Learning rate:', self.lr
                 # show progress bar if more than one batch
                 if sum(bucket_sizes) > 1:
                     prog = utils.Progbar(target=bucket_sizes[bucket_index])
